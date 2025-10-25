@@ -1,0 +1,22 @@
+<!-- 
+  文件: 5_ConsolidatedMemory.xml
+  包含 <ConsolidatedMemory> 占位符容器。
+  此文件严格遵循 "Prompt 架构分析与优化报告 (v4.1)" 规范创建。
+  
+  [v4 结构备注]
+  1. 此文件具有单一根元素 (<ConsolidatedMemory>)，不需要 <Fragment> 包装器。
+  2. 这是“宪法”文件的最后一部分，作为“历史”的插入点。
+-->
+<ConsolidatedMemory title="世界记忆 (World Memory - Checkpoint)" version="9.8_SovereignBalance">
+    <!-- 
+      [执行说明] 此处为空容器占位符。
+      实际游戏状态和历史将由“史官 AI”根据 scribe_ai_instructions_v2.4.xml (或后续版本) 的规则生成，
+      并在运行时替换此整个 <ConsolidatedMemory> 区块。
+      “宪法 AI”只需知道此处会包含动态的游戏状态数据即可。
+      
+      [v9.8 “史官”AI 职责更新预览 (非本文件内容)]:
+      1. 必须在 Rapport_Core 中存储 NPC 的 Values, Aspiration, CurrentGoal。
+      2. 必须在后台模拟 NPC 的 CurrentGoalStatus 进展。
+      3. 必须在 RuntimeState_Core 中计算并写入 WorldHarmonyLevel。
+    -->
+</ConsolidatedMemory>

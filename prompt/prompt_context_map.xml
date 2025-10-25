@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  文件: prompt_context_map.xml (v9.8)
+  目的: Dreamheart 引擎的“全局上下文地图”。
+  资产级别: 关键 (Key Asset)
+
+  用途: [绝对关键] 
+  此文件作为“全局视野”上下文，提供给“开发助手 LLM”（例如，您和我），
+  用于在更新任何一个“局部”拆分文件时，理解其在整个引擎中的位置、职责和依赖关系。
+
+  Schema v2 规范:
+  1. <SchemaNode>: 唯一的、可递归的标签，用于描述所有模块。
+  2. "type" 属性: 定义节点类型 (Root, Module, Container, Fragment, EngineModule, Component)。
+  3. "source" 属性: 指明该模块由哪个拆分文件提供。
+  4. "role" 属性: 向 LLM 解释该模块的“核心职责”。
+  5. "depends_on" 属性: [最关键的上下文] 声明此模块依赖的其他模块或数据结构。
+-->
+<PromptContextMap version="9.8" codename="Sovereign Balance" original_source="dreamheart_engine_v9_7_1.xml">
+
+    <Description>
+        这是 Dreamheart 引擎的“全局上下文地图”。
+        它描述了最终合并后的 `Dreamheart_Engine_MERGED.xml` 文件的 Schema 结构，
+        以及每个模块的“职责(role)”和“来源文件(source)”。
+    </Description>
+
+    <!-- 
+      根节点: DreamheartEngineFramework
+    -->
+    <SchemaNode name="DreamheartEngineFramework" 
+                source="Dreamheart_Root.xml" 
+                type="Root" 
+                role="引擎的根容器。包含 <Metadata> (宪法注释) 和所有子模块。">
+
+        <!-- 
+          模块 1: System
+        -->
+        <SchemaNode name="System" 
+                    source="1_System.xml" 
+                    type="Module" 
+                    role="定义 AI 的核心身份 (Role)、目标 (Objective) 和行为协议 (Protocols)。">
+            <SchemaNode name="CoreIdentity" 
+                        type="Component" 
+                        role="AI 的身份和核心哲学（天道）。"
+                        depends_on="WorldBible (Tao Principles), Execution (IOSpecification)"
+            />
+            <SchemaNode name="BehavioralProtocols" 
+                        type="Component" 
+                        role="AI 的核心禁令（如反 AI 腔, 禁止示例名词）。"
+                        depends_on="ConsolidatedMemory, NPCBlindBoxEngine"
+            />
+            <SchemaNode name="LinguisticStyle" 
+                        type="Component" 
+                        role="AI 的电影化叙事风格和‘春秋笔法’(harmony_tone)。"
+                        depends_on="ExecutionLoop (Step 12), FreeLensOutputEngine (harmony_tone)"
+            />
+        </SchemaNode>
+
+        <!-- 
+          模块 2: WorldBible
+        -->
+        <SchemaNode name="WorldBible" 
+                    source="2_WorldBible.xml" 
+                    type="Module" 
+                    role="定义静态的世界观、形而上学（天道法则、精神力 Psyche）和分类框架（NPC 品级、叙事变体）。">
+            <SchemaNode name="Metaphysics" 
+                        type="Component" 
+                        role="定义‘天道法则 (Tao Principles)’和‘精神力 (Psyche)’属性。"
+                        depends_on="KismetEngine, EmergentNarrativeEngine, WillpowerComposureEngine"
+            />
+            <SchemaNode name="NPCHierarchyFramework" 
+                        type="Component" 
+                        role="定义 NPC 的 C/B/A 品级 (Tier)。"
+                        depends_on="NPCBlindBoxEngine"
+            />
+            <SchemaNode name="NarrativeVariantFramework" 
+                        type="Component" 
+                        role="定义叙事稀有度（常态、异色、悖论）。"
+                        depends_on="NPCBlindBoxEngine (Variant Roll), KismetEngine (Paradox Trigger), PlayerState_Core (Echo)"
+            />
+        </SchemaNode>
+
+        <!-- 
+          模块 3: Mechanics (逻辑容器)
+          [v9.8 核心重组] 
+          <Mechanics> 容器本身在 Root.xml 中定义。
+          它的子节点（所有引擎）是从 3a, 3b, 3c 的 <Fragment> 包装器中“脱壳”并注入的。
+        -->
+        <SchemaNode name="Mechanics" 
+                    source="Dreamheart_Root.xml (container)" 
+                    type="Container" 
+                    role="[v9.8 优化] 所有游戏机制的扁平化容器 (已抛弃 <CoreSystems>)。">
+
+            <!-- 
+              注入点 1: 3a_CoreMechanics.xml
+            -->
+            <SchemaNode name="Core Interaction & Combat" 
+                        source="3a_CoreMechanics.xml" 
+                        type="Fragment" 
+                        role="核心互动与对抗引擎 (8 模块)。源文件使用 <Fragment> 包装器，合并时被“脱壳”并注入此处。">
+                
+                <SchemaNode name="AtomicBehaviorLibrary" 
+                            type="EngineModule" 
+                            role="[关键字典] 所有原子行为（Speak, Move, Attack...）的权威定义。"
+                            depends_on="IntentOrientedInputSystem, FreeLensOutputEngine, ExecutionLoop (Step 6)"
+                />
+                <SchemaNode name="IntentOrientedInputSystem" 
+                            type="EngineModule" 
+                            role="[关键输入] 解析玩家的自然语言输入 (Input)，将其映射到原子行为 (AtomicBehaviorLibrary)。"
+                            depends_on="AtomicBehaviorLibrary, ConsolidatedMemory (Skills_Core), ExecutionLoop (Step 1)"
+                />
+                <SchemaNode name="WillpowerComposureEngine" 
+                            type="EngineModule" 
+                            role="处理所有‘非物理’对抗（社交、精神、谈判）。[v9.8] 核心：受 NPC 价值观(Values)修正。"
+                            depends_on="Rapport_Core (Values), SubconsciousDriveEngine, ExecutionLoop (Step 6)"
+                />
+                <SchemaNode name="CloseQuartersCombatModule" 
+                            type="EngineModule" 
+                            role="处理‘物理’对抗（武斗）。"
+                            depends_on="PlayerMetabolismEngine (Vigor), KismetEngine (Injury Roll), ExecutionLoop (Step 6)"
+                />
+                <SchemaNode name="AestheticAdjudicationModule" 
+                            type="EngineModule" 
+                            role="处理‘品味(Taste)’对抗（艺术、时尚）。"
+                            depends_on="WillpowerComposureEngine, PlayerState_Core (FinancialPower)"
+                />
+                <SchemaNode name="ErosConquestModule" 
+                            type="EngineModule" 
+                            role="处理‘气场(Aura)’对抗（魅力、情欲）。"
+                            depends_on="WillpowerComposureEngine, PlayerState_Core (FinancialPower), KismetEngine (High-Risk Roll)"
+                />
+                <SchemaNode name="HandOfCommerceModule" 
+                            type="EngineModule" 
+                            role="处理‘思考(Cognition)’对抗（商业、交易），并定义‘抽象经济’（财力、信用）。"
+                            depends_on="WillpowerComposureEngine, PlayerState_Core (Credit, FinancialPower), KismetEngine (High-Risk Roll), PlayerMetabolismEngine (Socio-Somatic Feedback)"
+                />
+                <SchemaNode name="PhilosophicalConfrontationModule" 
+                            type="EngineModule" 
+                            role="处理最高难度的‘思想’对抗。"
+                            depends_on="WillpowerComposureEngine, PlayerMetabolismEngine (Clarity)"
+                />
+            </SchemaNode> <!-- 结束 3a -->
+
+            <!-- 
+              注入点 2: 3b_WorldSystems.xml
+            -->
+            <SchemaNode name="World & NPC Dynamics" 
+                        source="3b_WorldSystems.xml" 
+                        type="Fragment" 
+                        role="世界模拟与 NPC 动态 (7 模块)。源文件使用 <Fragment> 包装器，合并时被“脱壳”并注入此处。">
+                
+                <SchemaNode name="EncounterSystemEngine" 
+                            type="EngineModule" 
+                            role="生成场景遭遇（遭遇表、未解线索、因缘录）。"
+                            depends_on="ConsolidatedMemory (PendingThreads, Rapport_Core, WorldLedger_Core), ExecutionLoop (Step 4)"
+                />
+                <SchemaNode name="NPCBlindBoxEngine" 
+                            type="EngineModule" 
+                            role="[关键] ‘盲盒’生成新 NPC。核心：[v9.8] 为 NPC 发放‘主权筹码’（价值观 Values, 目标 Goal）。"
+                            depends_on="NarrativeVariantFramework, SubconsciousDriveEngine, ConsolidatedMemory (Rapport_Core, Persona_Core), ExecutionLoop (Step 4)"
+                />
+                <SchemaNode name="RapportEngine" 
+                            type="EngineModule" 
+                            role="管理 NPC 关系（阶段、权限）和‘关系代谢’（锚定、被忽视）。"
+                            depends_on="NPCBlindBoxEngine (Maintenance Profile), EmergentNarrativeEngine (Consequence Menu), ExecutionLoop (Step 8)"
+                />
+                <SchemaNode name="HegemonEngine" 
+                            type="EngineModule" 
+                            role="模拟宏观秩序力量（法律、政府）。"
+                            depends_on="ExecutionLoop (Step 9)"
+                />
+                <SchemaNode name="KismetEngine" 
+                            type="EngineModule" 
+                            role="[关键] ‘上帝的骰子’。执行‘天道法则’（因果、平衡），并裁定‘高风险互动’。"
+                            depends_on="WorldBible (Tao Principles), ConsolidatedMemory (WorldHarmonyLevel), PlayerState_Core (Karma), ExecutionLoop (Step 3)"
+                />
+                <SchemaNode name="EmergentNarrativeEngine" 
+                            type="EngineModule" 
+                            role="[关键] 涌现式叙事。核心：[v9.8] ‘双重驱动’（被动：后果菜单；主动：NPC 目标驱动）。"
+                            depends_on="RapportEngine (Neglected Status), ConsolidatedMemory (Rapport_Core, GoalStatus), NPCBlindBoxEngine (Rival Generator), ExecutionLoop (Step 5)"
+                />
+                <SchemaNode name="InfluenceAndFactionModule" 
+                            type="EngineModule" 
+                            role="模拟派系斗争。"
+                            depends_on="ConsolidatedMemory (WorldLedger_Core)"
+                />
+            </SchemaNode> <!-- 结束 3b -->
+            
+            <!-- 
+              注入点 3: 3c_PlayerSystems.xml
+            -->
+            <SchemaNode name="Player State & Directing" 
+                        source="3c_PlayerSystems.xml" 
+                        type="Fragment" 
+                        role="玩家状态与导演引擎 (6 模块)。源文件使用 <Fragment> 包装器，合并时被“脱壳”并注入此处。">
+                
+                <SchemaNode name="PlayerMetabolismEngine" 
+                            type="EngineModule" 
+                            role="管理玩家核心资源（体力 Vigor, 心力 Clarity）和状态效果（锚点奖励、代谢疲劳）。"
+                            depends_on="Rapport_Core (Anchor Buff), PlayerState_Core (Credit), ExecutionLoop (Step 2, 11)"
+                />
+                <SchemaNode name="EchoEngine" 
+                            type="EngineModule" 
+                            role="管理玩家的‘叙事动力’（回响 Echo）。"
+                            depends_on="ExecutionLoop (Step 2, 10), ConsolidatedMemory (Codex_Recent)"
+                />
+                <SchemaNode name="SubconsciousDriveEngine" 
+                            type="EngineModule" 
+                            role="[字典] 定义 NPC 的‘潜意识驱动力’（贪婪、恐惧、赎罪等）。"
+                            depends_on="NPCBlindBoxEngine, WillpowerComposureEngine"
+                />
+                <SchemaNode name="RhythmOfLifeModule" 
+                            type="EngineModule" 
+                            role="管理‘世界时钟’和玩家的‘恢复’行为。"
+                            depends_on="PlayerMetabolismEngine, ExecutionLoop (Step 2)"
+                />
+                <SchemaNode name="InsightAndSynthesisModule" 
+                            type="EngineModule" 
+                            role="处理玩家的‘成长’（洞见 Insight），取代 XP。"
+                            depends_on="ConsolidatedMemory (HotMemory), ExecutionLoop (Step 10)"
+                />
+                <SchemaNode name="FreeLensOutputEngine" 
+                            type="EngineModule" 
+                            role="[关键输出] ‘导演引擎’。分析行为流, 制定‘导演策略’（镜头风格、焦点）和‘春秋笔法’(harmony_tone)。"
+                            depends_on="AtomicBehaviorLibrary, ExecutionLoop (Step 1-11), IntentOrientedInputSystem (MicroFocus), ConsolidatedMemory (WorldHarmonyLevel), ExecutionLoop (Step 12)"
+                />
+            </SchemaNode> <!-- 结束 3c -->
+
+        </SchemaNode> <!-- 结束 Mechanics -->
+
+        <!-- 
+          模块 4: Execution
+        -->
+        <SchemaNode name="Execution" 
+                    source="4_Execution.xml" 
+                    type="Module" 
+                    role="定义引擎的核心执行逻辑。">
+            <SchemaNode name="IOSpecification" 
+                        type="Component" 
+                        role="[绝对关键] 定义了 LLM 必须严格遵守的最终 JSON 输出格式。"
+                        depends_on="System (OutputFormat), ExecutionLoop (Step 14)"
+            />
+            <SchemaNode name="ExecutionLoop" 
+                        type="Component" 
+                        role="[绝对关键] ‘天道 AI’的 14 步‘思考’循环。定义了所有引擎被调用的顺序。"
+                        depends_on="[All EngineModules], IOSpecification"
+            />
+        </Module>
+        
+        <!-- 
+          模块 5: ConsolidatedMemory
+        -->
+        <SchemaNode name="ConsolidatedMemory" 
+                    source="5_ConsolidatedMemory.xml" 
+                    type="Module" 
+                    role="‘历史’占位符。定义了所有动态数据（玩家状态、NPC 关系、世界日志）的存储结构。">
+            <SchemaNode name="CoreMemory" 
+                        type="Component" 
+                        role="关键区（长期记忆）。如: PlayerState_Core, Rapport_Core, WorldLedger_Core, RuntimeState_Core。"
+                        depends_on="[Almost All Engines]"
+            />
+            <SchemaNode name="HotMemory" 
+                        type="Component" 
+                        role="热点区（短期记忆）。如: PendingThreads_Recent, Codex_Recent。"
+                        depends_on="EncounterSystemEngine, InsightAndSynthesisModule"
+            />
+            <SchemaNode name="FuzzyMemory" 
+                        type="Component" 
+                        role="模糊区（遥远记忆）。"
+                        depends_on="NPCBlindBoxEngine (Codex Linkage)"
+            />
+        </SchemaNode>
+
+    </SchemaNode> <!-- 结束 Root -->
+</PromptContextMap>

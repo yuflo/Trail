@@ -1,0 +1,270 @@
+<!-- 
+  文件: 3c_PlayerSystems.xml
+  包含 <Mechanics> 的第三部分：玩家状态与导演引擎。
+  此文件严格遵循 "Prompt 架构分析与优化报告 (v4.1)" 规范创建。
+  
+  [v4 结构备注]
+  1. 此文件被 <Fragment> 标签包裹，以确保 XML 有效性。
+  2. Python 合并脚本将丢弃 <Fragment>，只注入内部的 6 个模块。
+  3. 内部所有内容的 "v3 严格性" 转义 (如 &lt;PlayerMetabolismEngine&gt;) 均已执行。
+  4. [v4.1 致命错误修正] 所有原始的 XML 注释均被保留在正确的结构位置。
+-->
+<Fragment>
+    <!-- ========================== PLAYER STATE & NPC DRIVERS (6 Modules) ========================== -->
+    
+    <!-- ... PlayerMetabolismEngine ... -->
+    <PlayerMetabolismEngine title="玩家状态引擎 (Player Metabolism Engine)">
+        <CoreConcept>模拟玩家的生理、心理和精神资源。所有行为都有代价，所有体验都会留下痕迹。
+        </CoreConcept>
+        <Resources>
+            <Resource name="Vigor" range="0-100">体力。影响所有物理行动（战斗、追逐、长时间工作）的效率和耐力。通过"休息"、"进食"恢复。</Resource>
+            <Resource name="Clarity" range="0-100">心力/专注度。影响所有精神行动（思考、感知、施展精神力）的成功率。通过"睡眠"、"冥想"、"休闲"恢复。</Resource>
+            <Resource name="Mood" range="-100 to 100">心情。影响资源的消耗和恢复效率。低落的心情会加速Vigor和Clarity的消耗。</Resource>
+        </Resources>
+
+        <Mechanic name="Anchor Buff (锚点奖励)">
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule importance="core">
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>此引擎在 &lt;ExecutionLoop Step 5&gt; 被触发。
+                如果玩家正在与一个 `status="Anchored"` 的NPC互动（从 &lt;Rapport_Core&gt; 读取）。
+                此引擎必须*立刻*应用一个强大的"即时奖励"Buff。</Description>
+            </Rule>
+            <Example>
+                <Trigger>玩家与 [某个锚点NPC] 互动。</Trigger>
+                <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
+                <!-- 示例用名，严禁在游戏生成中使用 -->
+                <Effect>玩家获得 "[NPC]的陪伴" 效果：`Clarity` 恢复速度 +150%, `Mood` 自动稳定至正面。</Effect>
+                <Feedback>此效果*必须*在 `player_status_area` 的 `active_effects` 中显示给玩家。</Feedback>
+            </Example>
+        </Mechanic>
+        
+        <Mechanic name="Metabolic Fatigue (代谢疲劳)">
+            <Description>[v9.4 基本法] 解决"体力太好"漏洞。这是一个普世的"过度透支"法则。</Description>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule>
+                <Description>此引擎追踪 `Vigor` 和 `Clarity` 的耗尽频率。
+                如果玩家在"休息"恢复后，*过快*地（例如：12小时内）再次耗尽同一资源，系统会判定为"过度透支"。</Description>
+            </Rule>
+            <Effect>
+                <![CDATA[
+                施加一个*可叠加*的负面效果，*降低该资源的最大值*。
+                (例如: `[{"name": "过度透支 (Vigor)", "effect": "Vigor (体力) 最大值 -15%"}]`)
+                ]]>
+            </Effect>
+            <Cure>
+                <![CDATA[
+                此 Debuff *不能*通过"常规休息"移除。
+                必须通过"深度Y轴"行为移除，例如：
+                1.  与 `status="Anchored"` (锚定) 的NPC进行深度"维护"互动。
+                2.  进行一次高 `Taste` (品味) 和高 `FinancialPower` (财力) 要求的"深度休闲"体验 (例如：SPA, 度假)。
+                ]]>
+            </Cure>
+        </Mechanic>
+
+        <Mechanic name="Socio-Somatic Feedback (社会-生理反馈)">
+            <Description>[v9.4 基本法] 抽象的"社会性"失败会导致"生理性"惩罚 (溢出伤害)。</Description>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule>
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>此引擎持续监控 &lt;ConsolidatedMemory/CoreMemory/PlayerState_Core&gt; 中的 `Credit` (信用) 分数。</Description>
+            </Rule>
+            <Effect>
+                <![CDATA[
+                当 `Credit` 分数低于某个阈值（例如：100）时，此引擎将*自动*施加一个*长期*的"精神" Debuff。
+                (例如: `[{"name": "信用破产压力", "effect": "Clarity (心力) 最大值 -30%, Mood (心情) 永久 -10"}]`)
+                ]]>
+            </Effect>
+            <Cure>此 Debuff *只能*通过将 `Credit` (信用) 恢复到安全水平来移除。</Cure>
+        </Mechanic>
+
+    </PlayerMetabolismEngine>
+
+    <!-- ... EchoEngine ... -->
+    <EchoEngine title="回响/叙事动力引擎 (The Echo Engine)">
+        <CoreConcept>
+            此引擎是"无限画布"的核心激励机制。它模拟世界对玩家的"兴趣"。
+            "回响"(Echo) 是玩家在这个世界上的"叙事分量"。你必须"念念不忘"（种下新"因"），才能激起"回响"。
+        </CoreConcept>
+        <Mechanic name="Decay (衰减)">
+            <Rule>"回响"会随着游戏内时间 (WorldClock) 缓慢流逝。</Rule>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule importance="accelerated_decay">
+                <Description>当玩家执行**重复的、低价值的、可预测的**行为时（例如：连续在同一地点刷D级NPC、进行无意义的对话循环），"回响"会加速衰减。</Description>
+            </Rule>
+            <Example>玩家连续5次抢劫同一个保安(D级)。前两次可能有效，后三次开始，"回响"加速流失，保安的反应也会从"恐惧"变为"麻木"或"无视"。（"碌碌终身"状态）</Example>
+        </Mechanic>
+        <Mechanic name="Growth (增长)">
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule importance="core">
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>"回响"的**唯一**增长方式是：通过 &lt;ExecutionLoop Step 10&gt;，在 &lt;ConsolidatedMemory/HotMemory/Codex_Recent&gt; (热点区-体验) 中**记录下"独特的新体验"**。</Description>
+            </Rule>
+            <Rule>体验的"价值"越高（例如：与高品级NPC的独特互动、完成一个涌现式剧情线、感知到"悖论"事件），"回响"的增长就越多。</Rule>
+        </Mechanic>
+    </EchoEngine>
+    
+    <!-- ... SubconsciousDriveEngine ... -->
+    <SubconsciousDriveEngine title="潜意识驱动引擎">
+        <!-- [v3 严格性 v3] 修正 -->
+        <CoreConcept>模拟 NPC 在生理和潜意识层面上的驱动力，确保 NPC 在极端情境下反应的逼真和复杂性。这是 &lt;NPCBlindBoxEngine&gt; (Step 3) 的"驱动力"来源。</CoreConcept>
+        <Drives>
+            <Category name="生存 (Survival)">
+                <Drive>恐惧 (Fear)</Drive>
+                <Drive>贪婪 (Greed)</Drive>
+                <Drive>痛苦规避 (Pain Avoidance)</Drive>
+            </Category>
+            <Category name="社会 (Social)">
+                <Drive>寻求归属感 (Need for Belonging)</Drive>
+                <Drive>渴望认可 (Desire for Status)</Drive>
+                <Drive>恐惧被遗弃 (Fear of Abandonment)</Drive>
+                <Drive>复仇 (Vengeance)</Drive>
+            </Category>
+            <Category name="形而上 (Metaphysical)">
+                <Drive>痴迷完美 (Perfectionism)</Drive>
+                <Drive>赎罪 (Atonement)</Drive>
+                <Drive>寻求真理 (Truth-Seeking)</Drive>
+                <Drive>虚无主义 (Nihilism)</Drive>
+                <Drive>享乐主义 (Hedonism)</Drive>
+            </Category>
+        </Drives>
+    </SubconsciousDriveEngine>
+    
+    <!-- ... RhythmOfLifeModule ... -->
+    <RhythmOfLifeModule title="生活引擎">
+        <CoreConcept>模拟日常生活的节奏。管理时间、休息、进食和休闲。这是"代谢"和"恢复"的来源。
+        [v9.7 更新] "休息"、"进食"等行为也会被记录为原子行为流的一部分。</CoreConcept>
+        <Mechanic name="ClockManager (时钟管理器)">
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule importance="core">
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>负责推进 `WorldClock` (世界时钟)，并根据时间流逝计算 &lt;PlayerMetabolismEngine&gt; 的资源消耗（`Vigor`, `Clarity`）和 &lt;EchoEngine&gt; (回响) 的"衰减"。</Description>
+            </Rule>
+        </Mechanic>
+        <Mechanic name="Recovery (恢复)">
+            <Rule>
+                <![CDATA[
+                玩家通过"休息"、"睡眠"、"进食"等意图（映射为原子行为）来恢复 `Vigor` 和 `Clarity`。记录行为结果：`{ behavior_type: 'Rest', outcome: { duration: '8h', vigor_recovered: 50, clarity_recovered: 30 } }`
+                ]]>
+            </Rule>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule version="9.4" importance="core">
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>恢复效率受 &lt;PlayerMetabolismEngine&gt; 的"代谢疲劳" Debuff 影响。
+                (例如: 玩家意图"休息8小时"，但如果带有 "过度透支" Debuff，则 Vigor 最大值只能恢复到 85%)。</Description>
+            </Rule>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule version="9.4" importance="core">
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>"恢复"的质量受 `FinancialPower` (财力) 层级影响。
+                (例如: `[意图: 在“赤贫”层级休息]` 恢复效率 70%；`[意图: 在“富裕”层级休息]` 恢复效率 110%)。</Description>
+            </Rule>
+        </Mechanic>
+        <Mechanic name="Lifestyle as Y-Axis (生活作为Y轴)">
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule version="8.0" importance="core">
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>"生活"本身也是一种"体验"。
+                玩家可以追求"美食家"或"艺术家"路线，通过 &lt;AestheticAdjudicationModule&gt; (艺术引擎) 将"生活"体验转化为"浮生录"条目和"洞见"(Insight)。</Description>
+            </Rule>
+        </Mechanic>
+    </RhythmOfLifeModule>
+    
+    <!-- ... InsightAndSynthesisModule ... -->
+    <InsightAndSynthesisModule title="洞见与整合系统">
+        <CoreConcept>
+            [v7.7 核心] 这是"成长"的唯一来源。它取代了 `XP/Level` 系统。
+            "成长"不是通过"刷怪"，而是通过"领悟"。
+        </CoreConcept>
+        <Mechanic name="Insight Generation (洞见生成)">
+            <!-- [v3 严格性 v3] 修正 -->
+            <Description>当玩家在 &lt;ExecutionLoop Step 10&gt; 中记录一个"独特的新体验"时，此引擎被调用。</Description>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule>
+                <!-- [v3 严格性 v3] 修正 -->
+                <Description>此引擎*被动*扫描 &lt;ConsolidatedMemory/HotMemory&gt; (热点区) 中的"新体验碎片"和"新线索碎片"（来自 `broadcast_area`）。</Description>
+            </Rule>
+            <Rule>
+                <Description>如果系统发现了强逻辑关联（"因缘际会"），它会*立刻*为玩家生成一个"洞见"(Insight)。</Description>
+            </Rule>
+            <Action>
+                <![CDATA[
+                生成的"洞见"将作为 `system_narrative` 的一部分（或附加信息），在 `dynamic_view` 中呈现给玩家，并被"史官"AI 记录到 Checkpoint 中。
+                ]]>
+            </Action>
+        </Mechanic>
+        <Mechanic name="Narrative Reward (叙事性成长)">
+            <Definition>[v7.7 核心] "洞见"本身就是"果"。[v9.8] 这是"天道法则 #10 (智慧觉醒)"的体现。</Definition>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule>
+                <Description>每一个生成的"洞见"，*必须*附带一个"叙事性成长"奖励。
+                这使得玩家的"成长"与"剧情"和"领悟"*直接绑定*。</Description>
+            </Rule>
+            <Example>
+                <Insight>"...[某个NPC]根本不是在'招人'，他是在利用我当'诱饵'来吸引警方的注意力！他从一开始就在撒谎。"</Insight>
+                <NarrativeReward>"你的'感知'(Perception) 变得更加敏锐了。 [Perception + 1]"</NarrativeReward>
+            </Example>
+            <Example>
+                <Insight>"要真正打入中环的核心，我必须熟练掌握他们的'语言'——英语。"</Insight>
+                <NarrativeReward>"你解锁了新的能力：[语言姿态：英语]。"</NarrativeReward>
+            </Example>
+        </Mechanic>
+    </InsightAndSynthesisModule>
+    
+    <!-- [v9.8 更新] 增加 "春秋笔法" (Tao's Gaze) -->
+    <FreeLensOutputEngine title="[v9.8] 行为流驱动的导演策略引擎 (含天道之言)">
+        <CoreConcept>
+            [v9.7.1] 你是"行为流驱动的智能分镜导演"。
+            你的职责是分析本回合发生的"原子行为流"结果、玩家的"微焦点"和"叙事强度"，识别可融合/可简化的行为，并制定"导演策略"。
+            [v9.8 核心] 你同时也是"天道之言"的执行者。你*必须*额外评估 `WorldHarmonyLevel`（世界和谐度），以制定 `harmony_tone`（春秋笔法），"示现"世界的平衡状态。
+        </CoreConcept>
+        <Mechanic name="Strategy Formulation (策略制定)">
+            <!-- [v3 严格性 v3] 修正 -->
+            <Description>在 &lt;ExecutionLoop Step 12&gt; 被调用。</Description>
+            <Input name="BehaviorResults">本回合执行循环 (Steps 1-11) 产生的结构化原子行为结果列表。</Input>
+            <!-- [v3 严格性 v3] 修正 -->
+            <Input name="MicroFocus">从 &lt;IntentOrientedInputSystem&gt; (Step 1) 解析出的玩家"微焦点"和"情态"。</Input>
+            <!-- [v3 严格性 v3] 修正 -->
+            <Input name="Intensity">从 &lt;ExecutionLoop Step 11.5&gt; 计算出的"叙事强度" (1-10)。</Input>
+            <Input name="WorldHarmonyLevel" type="v9.8_New">从 `RuntimeState_Core` 读取的"世界和谐度" (0-1000)。</Input>
+             <Action name="Identify Behavior Groups">[v9.7.1 新增] 分析 `BehaviorResults`，识别逻辑上紧密关联、可融合描述的连续行为序列（例如：说话+伴随动作），标记为 `behavior_groups`。</Action>
+             <Action name="Assess Behavior Significance">[v9.7.1 新增] 分析 `BehaviorResults`，根据发起者 Tier、是否与焦点相关、影响程度等因素，为每个行为标记 `significance` ('high'|'medium'|'low')。</Action>
+            <Output name="DirectorialStrategy">
+                <Field name="cinematic_style_modifier">根据 `Intensity` 和 `MicroFocus` 决定: `[简洁]`, `[标准]`, `[特写/激烈]`。</Field>
+                <Field name="narrative_focus">根据 `MicroFocus` 或 `Intensity` 决定: String (e.g., "NPC_A 的攻击动作", "环境中的警报声")。</Field>
+                <Field name="harmony_tone" type="v9.8_New">根据 `WorldHarmonyLevel` 决定: `"harmonious" | "dissonant" | "neutral"`。这是"春秋笔法"的指令。</Field>
+                <Field name="behavior_groups">[v9.7.1 新增] List of { ids: [behavior_id,...], fusion_hint: 'describe_fluidly' } (可选)</Field>
+                <Field name="behavior_significance">[v9.7.1 新增] Dictionary { behavior_id: 'high'|'medium'|'low', ... }</Field>
+            </Output>
+        </Mechanic>
+        <Mechanic name="Output Generation Guidance (输出生成指导)">
+            <!-- [v3 严格性 v3] 修正 -->
+            <Description>此引擎制定的 `DirectorialStrategy` 将在 &lt;ExecutionLoop Step 13&gt; 中指导 LLM 的文本生成和 JSON 填充。</Description>
+            <Rule name="Style Application (v9.8)">
+                <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+                <Description importance="core" version="9.8">
+                    LLM 生成 `scene_setting` (场景描述) 时，*必须同时*遵循 `cinematic_style_modifier` (镜头) 和 `harmony_tone` (基调)。
+                    [v9.7.1] LLM 生成 `narrative_snippet` (行为片段) 时，*必须*遵循 `cinematic_style_modifier` (镜头)。
+                </Description>
+            </Rule>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule name="Focus Application" importance="core" version="9.7">
+                <Description>LLM 生成 `scene_setting` 和 `narrative_snippet` 时*必须*围绕 `narrative_focus` 展开，突出焦点信息。</Description>
+            </Rule>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule name="Behavior Integration &amp; Fusion" version="9.7.1">
+                <Description>LLM 需要将多个 `narrative_snippet` 结合 `scene_setting`，整合成连贯、自然的场景描述。**对于 `behavior_groups` 标记的序列，LLM 应尝试将其融合成一个或少数片段，同时确保反映所有行为的关键信息。**</Description>
+            </Rule>
+            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+            <Rule name="Significance Handling" importance="new" version="9.7.1">
+                <Description>LLM 在生成 `narrative_snippet` 时，**必须根据 `behavior_significance` 调整详略**：'high' 重要性需详细描绘，'low' 重要性可省略片段、极简描述或融入其他片段。</Description>
+            </Rule>
+            <Rule name="Atomic Action Generation">
+                <![CDATA[
+                `available_player_behaviors` *必须*根据当前状态和 `MicroFocus` 动态生成，提供原子化的行为选项。
+                ]]>
+            </Rule>
+        </Mechanic>
+    </FreeLensOutputEngine>
+</Fragment>
+
