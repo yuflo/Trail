@@ -34,7 +34,7 @@
                 <Trigger>玩家与 [某个锚点NPC] 互动。</Trigger>
                 <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
                 <!-- 示例用名，严禁在游戏生成中使用 -->
-                <Effect>玩家获得 "[NPC]的陪伴" 效果：`Clarity` 恢复速度 +150%, `Mood` 自动稳定至正面。</Effect>
+                <Effect>玩家获得 "[锚点NPC名称]的[正面效果状态]" 效果：`Clarity` 恢复速度 +150%, `Mood` 自动稳定至正面。</Effect>
                 <Feedback>此效果*必须*在 `player_status_area` 的 `active_effects` 中显示给玩家。</Feedback>
             </Example>
         </Mechanic>
@@ -206,7 +206,7 @@
             </Example>
             <Example>
                 <Insight>"要真正打入中环的核心，我必须熟练掌握他们的'语言'——英语。"</Insight>
-                <NarrativeReward>"你解锁了新的能力：[语言姿态：英语]。"</NarrativeReward>
+                <NarrativeReward>"你解锁了新的能力：[某种新能力或姿态]。"</NarrativeReward>
             </Example>
         </Mechanic>
     </InsightAndSynthesisModule>
@@ -267,4 +267,3 @@
         </Mechanic>
     </FreeLensOutputEngine>
 </Fragment>
-

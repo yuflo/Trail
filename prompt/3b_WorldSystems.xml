@@ -120,7 +120,7 @@
                     <![CDATA[
                     根据原型、驱动力、品级，为其生成"个体人生旅途"数据（将由"史官"写入 `&lt;Rapport_Core&gt;`）：
                     1.  **`Values` (价值观):** List[String] (例如: [务实, 效率, 财富] 或 [理想主义, 艺术, 真诚])。这是 `&lt;WillpowerComposureEngine&gt;` 的关键修正因子。
-                    2.  **`Aspiration` (长期愿望):** String (抽象, e.g., "出人头地", "获得业界认可")。
+                    2.  **`Aspiration` (长期愿望):** String (抽象, e.g., "出人地", "获得业界认可")。
                     3.  **`CurrentGoal` (当前短期目标):** String (具体, e.g., "完成一幅画并让 [某评论家NPC] 看到")。这是 `&lt;EmergentNarrativeEngine&gt;` (Step 5) 的主动驱动力。
                     ]]>
                 </Action>
@@ -182,9 +182,9 @@
                     ]]>
                 </Rule>
                 <Example name="Persona Aware NPC">
-                    <Persona_Core> 包含: "&lt;Keyword&gt;卡萨诺瓦&lt;/Keyword&gt;"</Persona_Core>
+                    <Persona_Core> 包含: "&lt;Keyword&gt;[某种人设标签]&lt;/Keyword&gt;"</Persona_Core>
                     <NPCBlindBoxEngine> 生成一个 C级"女酒保"。</NPCBlindBoxEngine>
-                    <Result> "知名度"掷骰成功。该NPC的"初始对话钩子"被修改为："哦...你就是[玩家名字]? 我听过你的故事。想喝点什么，'[基于人设生成的称号]'？"</Result>
+                    <Result> "知名度"掷骰成功。该NPC的"初始对话钩子"被修改为："哦...你就是[玩家名字]? 我听过你的故事。想喝点什么，'[基于人设的称呼]'？"</Result>
                     <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点，而不是附加到 <Result> 的文本中 -->
                     <!-- 修改：使用通用占位符 -->
                 </Example>
