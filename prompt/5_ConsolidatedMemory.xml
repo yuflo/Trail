@@ -1,22 +1,224 @@
 <!-- 
-  文件: 5_ConsolidatedMemory.xml
-  包含 <ConsolidatedMemory> 占位符容器。
-  此文件严格遵循 "Prompt 架构分析与优化报告 (v4.1)" 规范创建。
+  "小世界" v2.5 (单文件模板版 - 增加连续性锚点)
   
-  [v4 结构备注]
-  1. 此文件具有单一根元素 (<ConsolidatedMemory>)，不需要 <Fragment> 包装器。
-  2. 这是“宪法”文件的最后一部分，作为“历史”的插入点。
+  [v2.5 更新]
+  - 增加了 [卷四: 连续性总账]，用于存储“史官”AI
+    生成的"即时衔接上下文"(ICC)。
+  - 这是为了解决 Checkpoint (清空上下文) 后，
+    “宪法”AI 不知道上一回合“最后一秒”发生了什么的问题，
+    确保剧情的无缝连贯。
 -->
-<ConsolidatedMemory title="世界记忆 (World Memory - Checkpoint)" version="9.8_SovereignBalance">
+<ConsolidatedMemory version="SmallWorld_v2.5_Single_wICC" title="[玩家定义的世界标题]">
+
     <!-- 
-      [执行说明] 此处为空容器占位符。
-      实际游戏状态和历史将由“史官 AI”根据 scribe_ai_instructions_v2.4.xml (或后续版本) 的规则生成，
-      并在运行时替换此整个 <ConsolidatedMemory> 区块。
-      “宪法 AI”只需知道此处会包含动态的游戏状态数据即可。
-      
-      [v9.8 “史官”AI 职责更新预览 (非本文件内容)]:
-      1. 必须在 Rapport_Core 中存储 NPC 的 Values, Aspiration, CurrentGoal。
-      2. 必须在后台模拟 NPC 的 CurrentGoalStatus 进展。
-      3. 必须在 RuntimeState_Core 中计算并写入 WorldHarmonyLevel。
+      卷一: 世界总账 (World Ledger)
+      (结构同 v2.4)
     -->
+    <WorldLedger>
+        <!-- 创世元数据 -->
+        <GenesisMetadata>
+            <PlayerInput name="style" content="[玩家希望的风格]"/>
+            <PlayerInput name="development_mode" content="[玩家喜欢的发展模式]"/>
+        </GenesisMetadata>
+    
+        <!-- 地点 (动态) -->
+        <Locations>
+            <Location id="LOC-001" name="[地点 A 名称]" 
+                      status="[available/locked/destroyed]">
+                <Description content="[地点的五感氛围描述]"/>
+                <AmbientRule description="[在此地点的社会规则]"/>
+            </Location>
+            <!-- ... 更多地点 ... -->
+        </Locations>
+        
+        <!-- 社会契约 (静态) -->
+        <SocialContracts>
+            <Contract id="SOC-001" name="[社会契约 A 名称]">
+                <Norm description="[社会规范的描述]"/>
+                <Consequence_for_Violation description="[违反此规范的后果]"/>
+            </Contract>
+            <!-- ... 更多社会契约 ... -->
+        </SocialContracts>
+    
+        <!-- 世界目标 (动态) -->
+        <WorldGoals>
+            <Goal id="WG-001" description="[宏观世界目标 A]" 
+                  status="[pending/active/completed/failed]"/>
+            <!-- ... 更多世界目标 ... -->
+        </WorldGoals>
+    
+        <!-- 势力名册 (Faction Ledger) -->
+        <FactionLedger>
+            <Faction id="FAC-001" name="[势力 A 名称]" 
+                     status="[active/disbanded/hidden]" 
+                     influence="[low/medium/high]">
+                <Values>
+                    <Value name="[势力价值观 1]" importance="high"/>
+                </Values>
+                <FactionGoal id="FG-001" description="[势力目标 A]" 
+                             status="[pending/active/completed]"/>
+            </Faction>
+            <!-- ... 更多势力 ... -->
+        </FactionLedger>
+    </WorldLedger>
+
+    <!-- 
+      卷二: 实体 (The Actors)
+      (结构同 v2.4)
+    -->
+    <EntityLedger>
+        <!-- 玩家实体 -->
+        <Player id="Player-001" name="[玩家姓名]">
+            <Status status="[active]" location_id_ref="[LOC-001]"/>
+            <VolatileState>
+                 <CurrentMood state="[初始情绪]" intensity="[0.5]"/>
+                 <Composure value="[100/100]"/>
+            </VolatileState>
+        </Player>
+    
+        <!-- NPC 实体 -->
+        <NPC id="NPC-001" name="[NPC A 名称]" 
+             status="[active/inactive/deceased]">
+            
+            <!-- A. 事实档案 (The Facts) -->
+            <Profile>
+                <Appearance description="[外貌]"/>
+                <Background summary="[背景]"/>
+                <LifeEvents>
+                    <Event type="[关键生活事件]" recency="[recent/past]"
+                           impact_summary="[核心影响]"/>
+                </LifeEvents>
+            </Profile>
+            
+            <!-- B. 内在驱动 (The "Opening") -->
+            <Needs>
+                 <Need name="[内在需求 1]" intensity="[high]" 
+                       satisfaction="[low]"
+                       leak_condition="[泄露条件]"/>
+            </Needs>
+            
+            <!-- C. 主权意志 (The "Defense") -->
+            <Values>
+                 <Value name="[个体价值观 1]" importance="high" 
+                        social_contract_id_ref="[SOC-001]"/>
+            </Values>
+            
+            <!-- D. 现实负担 (The "Burden") -->
+            <Constraints>
+                 <Constraint type="[现实负担 1]" 
+                             description="[责任或限制]"/>
+            </Constraints>
+    
+            <!-- E. “自我驱动”脚本 -->
+            <Goals>
+                <Goal id="[NPC-A-G1]" name="[NPC A 的目标 1]" 
+                      priority="[high]" status="[active]">
+                    <Criteria>
+                        <Criterion name="[目标标准 1]" importance="high"/>
+                    </Criteria>
+                    <ActionPlan>
+                        <Step id="[NPC-A-G1-S1]" name="[目标步骤 1]" 
+                              status="[pending]"
+                              trigger="[status == active]">
+                            <Action description="[NPC 的主动行动]"/>
+                        </Step>
+                        <!-- ... -->
+                    </ActionPlan>
+                </Goal>
+            </Goals>
+    
+            <!-- F. 核心张力 -->
+            <CoreTension>
+                <Conflict description="[核心冲突 1]">
+                    <PlayerPath_Reward description="[奖励路径 1]"/>
+                    <PlayerPath_Punish description="[惩罚路径 1]"/>
+                </Conflict>
+            </CoreTension>
+    
+            <!-- G. 动态状态 -->
+            <VolatileState>
+                <CurrentLocation ref_id="[LOC-001]"/>
+                <CurrentMood state="[初始情绪]" intensity="[0.5]"/>
+                <Composure value="[100/100]"/>
+            </VolatileState>
+        </NPC>
+        
+        <!-- ... 其他 10-18 个 NPC ... -->
+    
+    </EntityLedger>
+
+    <!-- 
+      卷三: 动态与关系 (The Connections & Script)
+      (结构同 v2.4)
+    -->
+    <DynamicsLedger>
+        <!-- 关系图谱 (Relationship Ledger) -->
+        <RelationshipLedger>
+            <Relation type="[acquaintance]" 
+                      source_entity_id="[Player-001]" 
+                      target_entity_id="[NPC-001]"
+                      sentiment="[neutral]" 
+                      intensity="[0.0]"
+                      status="[active]"/>
+            <!-- ... 更多关系 ... -->
+        </RelationshipLedger>
+    
+        <!-- 叙事与事件 (Narrative & Event Ledger) -->
+        <NarrativeLedger>
+            <!-- 叙事状态机 -->
+            <NarrativeThread id="NT-001" title="[叙事线 A 标题]">
+                <AssociatedEntities>
+                    <Entity id="[NPC-001]"/>
+                    <Entity id="[Player-001]" role="[potential_actor]"/>
+                </AssociatedEntities>
+                <Status content="[pending]"/>
+                <CurrentStep ref_id="[NT-001-P1]"/>
+                <Step id="NT-001-P1" name="[叙事步骤 1]">
+                    <!-- ... -->
+                </Step>
+            </NarrativeThread>
+            <!-- ... 更多叙事线 ... -->
+    
+            <!-- 事件触发器 -->
+            <EventLedger>
+                <Event id="EV-001" name="[事件 A 名称 (机会型)]" 
+                       status="[available]">
+                    <Trigger condition="[触发条件]"/>
+                    <ExposedNeed ref="[NPC-001.Needs.内在需求 1]"/>
+                </Event>
+                <Event id="EV-002" name="[事件 B 名称 (冲突型)]" 
+                       status="[locked]">
+                    <Trigger condition="[NT-001.CurrentStep == NT-001-P2]"/>
+                    <TestedValue ref="[NPC-001.Values.个体价值观 1]"/>
+                </Event>
+            </EventLedger>
+        </NarrativeLedger>
+    
+    </DynamicsLedger>
+
+    <!-- 
+      [v2.5 新增]
+      卷四: 连续性总账 (Continuity Ledger)
+      职责：由“史官”AI 在 Checkpoint 时动态生成，
+      为“宪法”AI (天道) 提供“清空上下文”后的
+      “即时热锚点”，确保剧情无缝衔接。
+    -->
+    <ContinuityLedger>
+        <ImmediateContinuationContext>
+            <ICC index="1" role="Primary">
+                <ImmediateState description="[“史官”AI 必须填充：上一回合结束时的即时状态，如：玩家刚躲入掩体]"/>
+                <ImmediateFocus entity_ref="[如：NPC-001]" description="[“史官”AI 必须填充：上一回合的即时焦点，如：NPC-001 正举起武器]"/>
+                <ImmediateStake description="[“史官”AI 必须填充：上一回合的即时风险，如：玩家即将暴露]"/>
+                <Preconditions time="[T_LOCAL_ISO]" location_ref="[LOC-001]"/>
+            </ICC>
+            <ICC index="2" role="Fallback">
+                <ImmediateState description="[“史官”AI 必须填充：备用衔接点，如：周围的警报声]"/>
+                <ImmediateFocus entity_ref="[FAC-001]" description="[“史官”AI 必须填充：备用焦点，如：增援的势力]"/>
+                <ImmediateStake description="[“史官”AI 必须填充：备用风险，如：被包围]"/>
+                <Preconditions time="[T_LOCAL_ISO]" location_ref="[LOC-001]"/>
+            </ICC>
+        </ImmediateContinuationContext>
+    </ContinuityLedger>
+
 </ConsolidatedMemory>
+
