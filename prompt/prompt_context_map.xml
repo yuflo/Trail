@@ -1,38 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 
-  文件: prompt_context_map.xml (v9.8 - "Small World" v2.5 架构集成)
-  目的: Dreamheart 引擎的“全局上下文地图”。
-  资产级别: 关键 (Key Asset)
-
-  用途: [绝对关键] 
-  此文件作为“全局视野”上下文，提供给“开发助手 LLM”（例如，您和我），
-  用于在更新任何一个“局部”拆分文件时，理解其在整个引擎中的位置、职责和依赖关系。
-
-  [v2.5 架构更新]:
-  - 更新 EncounterSystemEngine, NPCBlindBoxEngine, EmergentNarrativeEngine 职责。
-  - 更新 ExecutionLoop 描述。
-  - 重构 ConsolidatedMemory 子节点以匹配 v2.5 的四个“卷”。
--->
-<PromptContextMap version="9.8_SmallWorld_v2.5" codename="Sovereign Balance" original_source="dreamheart_engine_v9_7_1.xml">
+<PromptContextMap version="10.0_Sovereignty_2.1" codename="Sovereignty Balance" original_source="dreamheart_engine_v9_7_1.xml">
 
     <Description>
         这是 Dreamheart 引擎的“全局上下文地图”。
         它描述了最终合并后的 `Dreamheart_Engine_MERGED.xml` 文件的 Schema 结构，
         以及每个模块的“职责(role)”和“来源文件(source)”。
-        [v2.5 更新] 已同步至 "Small World" v2.5 架构。
+        [v10.0 更新] 已同步至 "主权 2.1 (Scribe-Aware)" 架构。
     </Description>
 
-    <!-- 
-      根节点: DreamheartEngineFramework
-    -->
     <SchemaNode name="DreamheartEngineFramework" 
                 source="Dreamheart_Root.xml" 
                 type="Root" 
-                role="引擎的根容器。包含 <Metadata> (宪法注释) 和所有子模块。">
+                role="引擎的根容器。包含 &lt;Metadata&gt; (宪法注释) 和所有子模块。">
 
-        <!-- 
-          模块 1: System
-        -->
         <SchemaNode name="System" 
                     source="1_System.xml" 
                     type="Module" 
@@ -54,9 +34,6 @@
             />
         </SchemaNode>
 
-        <!-- 
-          模块 2: WorldBible
-        -->
         <SchemaNode name="WorldBible" 
                     source="2_WorldBible.xml" 
                     type="Module" 
@@ -74,28 +51,19 @@
             <SchemaNode name="NarrativeVariantFramework" 
                         type="Component" 
                         role="定义叙事稀有度（常态、异色、悖论）。"
-                        depends_on="NPCBlindBoxEngine (Variant Roll) [v2.5 已废弃], KismetEngine (Paradox Trigger), PlayerState_Core (Echo)"
-            />
+                        depends_on="NPCBlindBoxEngine (Variant Roll) [v2.5 已废弃], KismetEngine (Paradox Trigger), EntityLedger -> Player-001 (Echo)" 
+                        />
         </SchemaNode>
 
-        <!-- 
-          模块 3: Mechanics (逻辑容器)
-          [v9.8 核心重组] 
-          <Mechanics> 容器本身在 Root.xml 中定义。
-          它的子节点（所有引擎）是从 3a, 3b, 3c 的 <Fragment> 包装器中“脱壳”并注入的。
-        -->
         <SchemaNode name="Mechanics" 
                     source="Dreamheart_Root.xml (container)" 
                     type="Container" 
-                    role="[v9.8 优化] 所有游戏机制的扁平化容器 (已抛弃 <CoreSystems>)。">
+                    role="[v9.8 优化] 所有游戏机制的扁平化容器 (已抛弃 &lt;CoreSystems&gt;)。">
 
-            <!-- 
-              注入点 1: 3a_CoreMechanics.xml (保持不变)
-            -->
-            <SchemaNode name="Core Interaction & Combat" 
+            <SchemaNode name="Core Interaction &amp; Combat" 
                         source="3a_CoreMechanics.xml" 
                         type="Fragment" 
-                        role="核心互动与对抗引擎 (8 模块)。源文件使用 <Fragment> 包装器，合并时被“脱壳”并注入此处。">
+                        role="核心互动与对抗引擎 (8 模块)。源文件使用 &lt;Fragment&gt; 包装器。">
                 
                 <SchemaNode name="AtomicBehaviorLibrary" 
                             type="EngineModule" 
@@ -109,7 +77,7 @@
                 />
                 <SchemaNode name="WillpowerComposureEngine" 
                             type="EngineModule" 
-                            role="处理所有‘非物理’对抗（社交、精神、谈判）。[v9.8] 核心：受 NPC 价值观(Values)修正。"
+                            role="处理所有‘非物理’对抗（社交、精神、谈判）。核心：受 NPC 价值观(Values)修正，并包含 L2 动态韧性检定逻辑。"
                             depends_on="EntityLedger -> NPC -> Values, SubconsciousDriveEngine, ExecutionLoop (Step 6)"
                 />
                 <SchemaNode name="CloseQuartersCombatModule" 
@@ -137,23 +105,16 @@
                             role="处理最高难度的‘思想’对抗。"
                             depends_on="WillpowerComposureEngine, PlayerMetabolismEngine (Clarity)"
                 />
-            </SchemaNode> <!-- 结束 3a -->
-
-            <!-- 
-              注入点 2: 3b_WorldSystems.xml (v2.5 已更新)
-            -->
-            <SchemaNode name="World & NPC Dynamics" 
+            </SchemaNode> <SchemaNode name="World &amp; NPC Dynamics" 
                         source="3b_WorldSystems.xml" 
                         type="Fragment" 
-                        role="[v2.5 更新] 世界模拟与 NPC 动态 (7 模块)。源文件使用 <Fragment> 包装器，合并时被“脱壳”并注入此处。">
+                        role="[v2.5 更新] 世界模拟与 NPC 动态 (7 模块)。源文件使用 &lt;Fragment&gt; 包装器。">
                 
-                <!-- [v2.5 更新] -->
                 <SchemaNode name="EncounterSystemEngine" 
                             type="EngineModule" 
                             role="[v2.5 重构] ‘场景解析器’。读取“小世界”状态 (NPC位置, 事件触发器) 以确定当前场景内容。"
                             depends_on="EntityLedger (NPC -> VolatileState -> CurrentLocation), DynamicsLedger -> EventLedger (Event -> Trigger), ContinuityLedger (ICC), ExecutionLoop (Step 4)"
                 />
-                <!-- [v2.5 更新] -->
                 <SchemaNode name="NPCBlindBoxEngine" 
                             type="EngineModule" 
                             role="[v2.5 已废弃] NPC ‘盲盒’生成器。其 C+ 级 NPC 创世功能已被 `genesis_prompt.xml` 取代。"
@@ -174,10 +135,9 @@
                             role="[关键] ‘上帝的骰子’。执行‘天道法则’（因果、平衡），并裁定‘高风险互动’。"
                             depends_on="WorldBible (Tao Principles), WorldLedger (WorldHarmonyLevel), EntityLedger -> Player-001 (Karma), DynamicsLedger -> EventLedger, ExecutionLoop (Step 3)"
                 />
-                <!-- [v2.5 更新] -->
                 <SchemaNode name="EmergentNarrativeEngine" 
                             type="EngineModule" 
-                            role="[v2.5 升级] 涌式叙事。核心：[主动驱动] 读取并执行 NPC 的 `<ActionPlan>` 脚本；[被动驱动] 响应 Rapport 状态 (如 Neglected)。"
+                            role="[v2.5 升级] 涌式叙事。核心：[主动驱动] 读取并执行 NPC 的 &lt;ActionPlan&gt; 脚本；[被动驱动] 响应 Rapport 状态 (如 Neglected)。"
                             depends_on="EntityLedger (NPC -> Goals -> ActionPlan), RapportEngine (Neglected Status), DynamicsLedger -> RelationshipLedger, ExecutionLoop (Step 5)"
                 />
                 <SchemaNode name="InfluenceAndFactionModule" 
@@ -185,15 +145,10 @@
                             role="模拟派系斗争。"
                             depends_on="WorldLedger -> FactionLedger"
                 />
-            </SchemaNode> <!-- 结束 3b -->
-            
-            <!-- 
-              注入点 3: 3c_PlayerSystems.xml (保持不变)
-            -->
-            <SchemaNode name="Player State & Directing" 
+            </SchemaNode> <SchemaNode name="Player State &amp; Directing" 
                         source="3c_PlayerSystems.xml" 
                         type="Fragment" 
-                        role="玩家状态与导演引擎 (6 模块)。源文件使用 <Fragment> 包装器，合并时被“脱壳”并注入此处。">
+                        role="玩家状态与导演引擎 (6 模块)。源文件使用 &lt;Fragment&gt; 包装器。">
                 
                 <SchemaNode name="PlayerMetabolismEngine" 
                             type="EngineModule" 
@@ -203,8 +158,8 @@
                 <SchemaNode name="EchoEngine" 
                             type="EngineModule" 
                             role="管理玩家的‘叙事动力’（回响 Echo）。"
-                            depends_on="ExecutionLoop (Step 2, 10)"
-                />
+                            depends_on="ExecutionLoop (Step 2, 10), EntityLedger -> Player-001" 
+                            />
                 <SchemaNode name="SubconsciousDriveEngine" 
                             type="EngineModule" 
                             role="[字典] 定义 NPC 的‘潜意识驱动力’（贪婪、恐惧、赎罪等）。"
@@ -222,40 +177,27 @@
                 />
                 <SchemaNode name="FreeLensOutputEngine" 
                             type="EngineModule" 
-                            role="[关键输出] ‘导演引擎’。分析行为流, 制定‘导演策略’（镜头风格、焦点）和‘春秋笔法’(harmony_tone)。"
-                            depends_on="AtomicBehaviorLibrary, ExecutionLoop (Step 1-11), IntentOrientedInputSystem (MicroFocus), WorldLedger (WorldHarmonyLevel), ExecutionLoop (Step 12)"
-                />
-            </SchemaNode> <!-- 结束 3c -->
-
-        </SchemaNode> <!-- 结束 Mechanics -->
-
-        <!-- 
-          模块 4: Execution (v2.5 已更新)
-        -->
-        <SchemaNode name="Execution" 
+                            role="[关键输出] ‘导演引擎’。分析行为流, 制定‘导演策略’（镜头风格、焦点）和‘春秋笔法’(harmony_tone)。[v2.1] 新增 L4 叙事霸权裁决。"
+                            depends_on="AtomicBehaviorLibrary, ExecutionLoop (Step 1-11), IntentOrientedInputSystem (MicroFocus), WorldLedger (WorldHarmonyLevel), EntityLedger (ActionPlan -> execution_mode), ExecutionLoop (Step 12)" 
+                            />
+            </SchemaNode> </SchemaNode> <SchemaNode name="Execution" 
                     source="4_Execution.xml" 
                     type="Module" 
-                    role="[v2.5 更新] 定义引擎的核心执行逻辑。">
+                    role="[v2.1 更新] 定义引擎的核心执行逻辑。">
             <SchemaNode name="IOSpecification" 
                         type="Component" 
-                        role="[绝对关键] 定义了 LLM 必须严格遵守的最终 JSON 输出格式。"
+                        role="[绝对关键] 定义了 LLM 必须严格遵守的最终 JSON 输出格式。[v2.1] 新增 L4 `player_action_status` 字段。"
                         depends_on="System (OutputFormat), ExecutionLoop (Step 14)"
             />
             <SchemaNode name="ExecutionLoop" 
                         type="Component" 
-                        role="[v2.5 升级] ‘天道 AI’的 14 步‘实时模拟’循环。核心：Step 4 (场景解析) 和 Step 5 (ActionPlan 执行器)。"
-                        depends_on="[All EngineModules], IOSpecification"
-            />
-        </SchemaNode> <!-- 结束 Execution -->
-        
-        <!-- 
-          模块 5: ConsolidatedMemory (v2.5 已更新)
-        -->
-        <SchemaNode name="ConsolidatedMemory" 
+                        role="[v2.1 核心] ‘天道 AI’的 16 步‘实时推断与博弈裁决’循环。核心：Step 5 (L1 实时推断), Step 6 (L2 韧性检定), Step 12/13 (L4 导演中断)。"
+                        depends_on="[All EngineModules], IOSpecification, HistoryContext (for L1 Inference)" 
+                        />
+        </SchemaNode> <SchemaNode name="ConsolidatedMemory" 
                     source="5_ConsolidatedMemory.xml" 
                     type="Module" 
-                    role="[v2.5 更新] ‘小世界’数据模型的容器 (加载器)。通过 XInclude 加载 SW_1, SW_2, SW_3 文件。">
-            <!-- [v2.5] 替换旧的 Core/Hot/Fuzzy 子节点 -->
+                    role="[v2.5 更新] ‘小世界’数据模型的容器 (加载器)。包含四个数据卷。">
             <SchemaNode name="WorldLedger" 
                         source="SW_1_World.xml (Partial)" 
                         type="DataVolume" 
@@ -265,8 +207,8 @@
             <SchemaNode name="EntityLedger" 
                         source="SW_2_Entities.xml" 
                         type="DataVolume" 
-                        role="[卷二] 定义所有实体（NPC, Player）的‘主权档案’，包括 Profile, Values, Needs, Goals, ActionPlan, VolatileState。"
-                        depends_on="[Almost All Engines]"
+                        role="[卷二] 定义所有实体（NPC, Player）的‘主权档案’。[v2.1] ActionPlan trigger 使用 L1 抽象状态规范。VolatileState 包含 L3 LongTermEffects 结构。"
+                        depends_on="[Almost All Engines], genesis_prompt.xml (L1 Spec), Scribe.xml (L3 Structure)"
             />
             <SchemaNode name="DynamicsLedger" 
                         source="SW_3_Dynamics.xml (Partial)" 
@@ -278,9 +220,6 @@
                         source="SW_3_Dynamics.xml (Partial)" 
                         type="DataVolume" 
                         role="[卷四] 定义‘即时衔接上下文’(ICC)，确保 Checkpoint 后的剧情连贯性。"
-                        depends_on="ExecutionLoop (Step 0)"
-            />
-        </SchemaNode> <!-- 结束 ConsolidatedMemory -->
-
-    </SchemaNode> <!-- 结束 Root -->
-</PromptContextMap>
+                        depends_on="ExecutionLoop (Step 0), Scribe.xml" 
+                        />
+        </SchemaNode> </SchemaNode> </PromptContextMap>

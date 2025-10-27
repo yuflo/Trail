@@ -1,5 +1,6 @@
 <!-- 
   文件: 4_Execution.xml (v4.1 - "Small World" v2.5 架构集成)
+  [v2.1 修正] 已根据 "主权 2.1" 升级工单 (planning.md) 更新。
   包含 <Execution> 模块 (IOSpecification 和 ExecutionLoop)。
   
   [v2.5 架构变更]:
@@ -37,7 +38,8 @@
                 "director_strategy": { // [v9.7 新增] 明确记录导演策略
                     "narrative_focus": "String (e.g., 'NPC_A 的攻击动作')",
                     "cinematic_style_modifier": "String (e.g., '[特写/激烈]')",
-                    "harmony_tone": "String (e.g., 'dissonant')" // [v9.8 新增] 天道之言/春秋笔法
+                    "harmony_tone": "String (e.g., 'dissonant')", // [v9.8 新增] 天道之言/春秋笔法
+                    "player_action_status": "String (e.g., 'normal' | 'preempted')" // [v2.1 L4 新增]
                 },
 
                 "scene_setting": "String (由 LLM 根据策略(含 harmony_tone)生成的整体环境氛围描述)",
@@ -71,7 +73,8 @@
                   { "behavior_type": "Attack", "target": "npc_...", "description": "反击 [NPC 名字]" },
                   { "behavior_type": "Defend", "description": "格挡或闪避下一次攻击" },
                   { "behavior_type": "Speak", "target": "npc_...", "description": "尝试质问对方的动机", "focus_hint": "对方眼神闪烁" }, // 示例微交互提示
-                  <action content="Move" target="[某个出口]" description="尝试逃离现场" />
+                  { "behavior_type": "Move", "target": "[某个出口]", "description": "尝试逃离现场" }
+                  // [v2.1 L4 修正] 此处内容将在 L4 中断时被动态重置
                 ]
               },
               "player_status_area": {
@@ -97,6 +100,7 @@
         <!-- 
           [v9.8 核心] 宪法 AI (天道) 的主执行循环 (群体博弈裁决)
           [v2.5 升级] 已升级为"小世界" v2.5 模型的"实时模拟器"。
+          [v2.1 修正] 升级以支持 L1, L2, L4 主权模型。
         -->
         
         <Step id="0" name="[v2.5] 初始化状态 (Initialize State)">
@@ -162,29 +166,28 @@
             <Output name="SceneEntities">当前场景中的 NPC 和关键事件列表。</Output>
         </Step>
 
-        <!-- [v2.5 升级] -->
-        <Step id="5" name="[v2.5] NPC 主权驱动 (实时群演博弈推演)">
+        <!-- [v2.5 升级] [v2.1 修正 L1] -->
+        <Step id="5" name="[v2.5-Sovereignty-2.1] NPC 主权驱动 (含实时推断)">
             <Action>应用"精神场域"修正。</Action>
             <Action>
                 [v2.5 核心] 调用 [v2.5 升级] 后的 &lt;EmergentNarrativeEngine&gt;，
                 执行"实时推演"循环：
             </Action>
             <Action name="1. 遍历 (Iterate)">
-                "宪法"AI (天道) **遍历 (Iterate)** `EntityLedger` (卷二) 中的**所有** `NPC` 实体（即 10-20 个 NPC）。
+                "宪法"AI (天道) **遍历 (Iterate)** `EntityLedger` (卷二) 中的**所有** `NPC` 实体。
             </Action>
             <Action name="2. 读取 (Read)">
-                对于每一个 NPC，AI **读取 (Read)** 其 `&lt;Goals&gt; -> &lt;ActionPlan&gt;` 脚本。
+                对于每一个 NPC，AI **读取 (Read)** 其 `&lt;Goals&gt; -> &lt;ActionPlan&gt;` 脚本（来自“过时”XML）。
             </Action>
-            <Action name="3. 检查 (Check)">
-                AI **检查 (Check)** 该 NPC 所有 `pending` (待定) 状态的 `&lt;Step&gt;`，
-                看其 `&lt;Trigger&gt;` (触发器) 条件是否被当前的世界状态
-                （如：`WorldClock`、玩家位置、其他 NPC 状态）所满足。
+            <Action name="3. [v2.1-ScribeAware] 检查与推断 (Check &amp; Infer)">
+                AI **检查 (Check)** 该 NPC 所有 `pending` 状态的 `&lt;Step&gt;` 的 `&lt;Trigger&gt;` (触发器)。
+                <Rule name="Standard Trigger">如果触发器是“世界状态”（如 `WorldClock`, `PlayerLocation`），则正常检查。</Rule>
+                <Rule name="[L1] Abstract State Trigger">[v2.1 核心] 如果触发器是“抽象状态”（如 `trigger="[State:Guilty]"`），AI（天道）**必须**立即**扫描“历史对话上下文”**（尤其是最近的交互），并*自行推断*该NPC当前是否符合此“抽象状态”。</Rule>
             </Action>
             <Action name="4. 执行 (Execute)">
-                如果一个 `&lt;Trigger&gt;` 被满足，"宪法"AI **必须**立即为这个 NPC
-                （即使他不在玩家面前）生成一个"自我驱动"的行为意图，
+                如果一个 `&lt;Trigger&gt;` 被满足（无论是通过“世界状态”还是“实时推断”），"宪法"AI **必须**立即为这个 NPC
+                生成一个"自我驱动"的行为意图（并标记其`execution_mode`和`priority`），
                 并将其加入到本回合的"待裁决列表" (`NPCBehaviorIntentList`) 中。
-                （此意图将在 Step 13 作为"小世界动态"输出到 `broadcast_area`）。
             </Action>
             <Action name="5. 被动 (Passive)">
                 (逻辑不变) 同时执行"被动"驱动，检查 `RapportEngine` 状态 (如 "Neglected")，
@@ -200,7 +203,8 @@
             <Action>如果不匹配，生成"沟通失败"行为结果 (`{ behavior_type: 'CommunicateFail', outcome: { reason: 'language_barrier' } }`)，并可能中止后续相关行为的处理。</Action>
         </Step>
 
-        <Step id="6" name="[v9.8] 原子行为裁定 (含价值观) (Atomic Behavior Adjudication)">
+        <!-- [v2.1 修正 L2] -->
+        <Step id="6" name="[v9.8-Sovereignty-2.1] 原子行为裁定 (含 L2 韧性检定)">
             <Action>
                 [v2.5] 合并 Step 1 的玩家 `MappedBehaviorList` 和 Step 5 
                 "实时推演"生成的 `NPCBehaviorIntentList`，
@@ -213,6 +217,7 @@
                 应用"个体价值观修正"，读取 NPC 在 `EntityLedger` (卷二) 
                 中的 `Values` (价值观) 并*巨幅*修正检定结果。
             </Action>
+            <Action name="[L2] 调用动态对抗层">[v2.1 核心] 在裁定“精神对抗”时，**必须**（在价值观修正后）立即调用 `3a_CoreMechanics.xml` 中定义的“**价值观-韧性检定 (Value-Resilience Check)**”逻辑。如果检定触发（如NPC心防值过低且被触犯价值观），则强行插入反抗行为。</Action>
             <Action>[v9.7.1 核心] 每个引擎**必须**输出标准化的原子行为结果，确保**所有**独立发生的、有状态改变意义的行为（包括玩家的伴随动作、次要NPC的回应）都被记录。</Action>
             <Action>[v9.8] 如果发生"武斗"战败或高风险物理失败，触发"物理伤害"检定（Principle #11），并生成 `SufferTrauma` 行为结果。</Action>
             <Output name="BehaviorResultsList">本回合所有已裁定的原子行为结果**完整列表**。</Output>
@@ -277,37 +282,55 @@
             <Output name="NarrativeIntensity">强度分数。</Output>
         </Step>
         
-        <!-- [v9.8 更新] 增加 "春秋笔法" (Tao's Gaze) -->
-        <Step id="12" name="[v9.8] 制定导演策略 (含天道之言) (Formulate Directorial Strategy)">
+        <!-- [v9.8 更新] [v2.1 修正 L4] -->
+        <Step id="12" name="[v9.8-Sovereignty-2.1] 制定导演策略 (含 L4 叙事霸权)">
             <Action>调用 &lt;FreeLensOutputEngine&gt; (v9.8)。</Action>
             <Input>
-                <Param name="BehaviorResults">来自 Step 6 的 `BehaviorResultsList` (完整列表)。</Param>
+                <Param name="BehaviorResults">来自 Step 6 的 `BehaviorResultsList` (完整列表，包含 Step 5 的 L1 推断结果)。</Param>
                 <Param name="MicroFocus">来自 Step 1 的 `ParsedIntent`。</Param>
                 <Param name="Intensity">来自 Step 11.5 的 `NarrativeIntensity`。</Param>
                 <Param name="WorldHarmonyLevel" type="v9.8_New">
                     [v2.5] 来自 Step 0 (从 `WorldLedger` (卷一) 读取)。
                 </Param>
             </Input>
-            <Action>[v9.7.1] 引擎分析行为结果、玩家焦点和强度。</Action>
-            <Action>[v9.7.1] **识别可融合的行为序列** (`behavior_groups`) 和**评估行为重要性** (`behavior_significance`)。</Action>
-            <Action>[v9.8 核心] **制定"春秋笔法"策略**，根据 `WorldHarmonyLevel` 设置 `harmony_tone` 字段。</Action>
-            <Action>制定包含风格、焦点、和谐基调、融合提示和重要性标记的 `DirectorialStrategy`。</Action>
-            <Output name="Strategy">导演策略 (`style`, `focus`, `harmony_tone`, `behavior_groups`, `behavior_significance`)</Output>
+            <Action name="[L4] 扫描中断事件">[v2.1 核心] **Step 12 必须**首先扫描 `BehaviorResults` 列表中，是否存在由 L1（实时推断）激活的 `execution_mode="interrupt"` 事件。</Action>
+            <Action name="[L4] 裁定叙事霸权">
+                <Rule name="Interrupt Triggered">[v2.1 核心] **IF (发现“中断”事件):**
+                    1. 导演（天道）**必须**强行将 `narrative_focus`（叙事焦点）设为该NPC的中断事件（如“丈夫A打电话”）。
+                    2. **必须**将 `player_action_status` 标记为 `"preempted"`（被抢占）。
+                    3. （[v9.8] 春秋笔法 `harmony_tone` 正常制定）。
+                    4. （[v9.7.1] 融合/详略分析 `behavior_groups` 正常制定）。
+                </Rule>
+                <Rule name="No Interrupt">[v2.1] **IF (未发现“中断”事件):**
+                    1. 正常分析 `BehaviorResults`、玩家焦点和强度。
+                    2. 正常制定 `narrative_focus` 和 `harmony_tone`。
+                    3. 标记 `player_action_status="normal"`。
+                </Rule>
+            </Action>
+            <Action>制定包含风格、焦点、和谐基调、融合提示、重要性标记以及[L4]玩家状态的 `DirectorialStrategy`。</Action>
+            <Output name="Strategy">导演策略 (`style`, `focus`, `harmony_tone`, `behavior_groups`, `behavior_significance`, `player_action_status`)</Output>
         </Step>
         
-        <!-- [v9.8 更新] LLM 根据 "春秋笔法" 生成 -->
-        <Step id="13" name="[v9.8] 按策略生成行为流叙事 (含融合与详略)">
+        <!-- [v9.8 更新] [v2.1 修正 L4] -->
+        <Step id="13" name="[v9.8-Sovereignty-2.1] 按策略生成叙事 (含 L4 导演中断)">
             <Action>
                 [v2.5 核心] 生成 `broadcast_area` 内容。
                 **必须包含** Step 5 "实时推演"出的、
                 且在 Step 6 被裁决的**所有**"小世界动态"
                 （即玩家不在场时发生的 NPC 行为）。
             </Action>
-            <Action>[核心 v9.8] 生成 `dynamic_view` 内容：
-                1.  **传递完整行为结果和精细策略给 LLM:** 将 Step 6 的 `BehaviorResultsList` (完整列表)、Step 11 的 `FinalEntityStates`、Step 12 的 `Strategy` (含 `harmony_tone`) 提供给 LLM。
-                2.  **生成场景描述 (含春秋笔法):** 指示 LLM 根据 `Strategy` 中的 `cinematic_style_modifier` (镜头) 和 `harmony_tone` (基调) **两者**生成 `scene_setting`。
+            <Action name="[L4] 执行导演中断或正常叙事">[v2.1 核心] AI（天道）**必须**检查 Step 12 传来的 `Strategy.player_action_status`：</Action>
+            <Action name="Case 1: [player_action_status == 'preempted'] (L4 中断)">
+                1.  **[v2.1 核心] 抛弃玩家意图：** AI（天道）**必须抛弃**玩家的原始意图叙事（即玩家想做的事*没有*发生）。
+                2.  **[v2.1 核心] 优先渲染中断：** **必须**在 `dynamic_view` 中**优先渲染**被强行设置的 `narrative_focus`（即NPC的“中断”事件）。（例如：“你正要开口，阿兰的电话突然响了...”）
+                3.  **[v2.1 核心] 重置玩家行为：** **必须**重置 `available_player_behaviors`，使其变为**应对该“中断”**的新选项（例如：“[观察阿兰的反应]”、“[示意她接电话]”）。
+                4.  （正常生成 `scene_setting`, `player_status_area` 等）。
+            </Action>
+            <Action name="Case 2: [player_action_status == 'normal'] (正常叙事)">
+                1.  **传递完整行为结果和精细策略给 LLM:** 将 Step 6, 11 的结果和 Step 12 的 `Strategy` 提供给 LLM。
+                2.  **生成场景描述 (含春秋笔法):** 指示 LLM 根据 `cinematic_style_modifier` 和 `harmony_tone` 生成 `scene_setting`。
                 3.  **生成行为叙事片段 (含融合与详略):**
-                    * 指示 LLM 遍历 `BehaviorResultsList` (只遍历玩家在场的行为)。
+                    * （...[v9.7.1] 逻辑不变...）指示 LLM 遍历 `BehaviorResultsList`（只遍历玩家在场的行为）。
                     * 对于标记为**同一组** (`behavior_groups`) 的行为，尝试将其**融合成**一个或少数连贯的 `narrative_snippet`。
                     * 对于标记为**低重要性** (`low` significance) 的行为，**省略** `narrative_snippet`、生成**极简**描述或将其**融入**其他片段。
                     * 对于**高/中重要性**且**未被融合**的行为，生成符合 `Strategy` (风格、焦点) 的**独立** `narrative_snippet`。
@@ -326,3 +349,4 @@
         </Step>
     </ExecutionLoop>
 </Execution>
+

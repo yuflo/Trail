@@ -1,23 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  "史官"AI 指令 v3.3 (增加“连续性锚点”任务)
+  "史官"AI 指令 v3.4 (增加"长期状态"推断 + "连续性锚点"任务)
   
   [v3.3 更新]
   - 增加了 [新任务 Step 3.5]: "生成连续性锚点 (ICC)"。
   - <OutputTemplate> 更新至 v2.5，包含了
     新的 [卷四: 连续性总账] 供 AI 填充。
+    
+  [v3.4 主权 2.1 L3 修正]
+  - 根据 "主权 2.1" 升级工单 (Task 3.1)，在 <ExecutionWorkflow> 
+    中新增 Step 3.6，明确指示"史官"必须推断并记录NPC的"长期状态"。
+  - 根据 "主权 2.1" 升级工单 (Task 3.2)，在 <OutputTemplate> 的
+    NPC -> VolatileState 中添加 <LongTermEffects> 结构占位符。
 -->
-<ScribePrompt version="3.3_Explicit_Schema_wICC">
+<ScribePrompt version="3.4_Sovereignty_L3_Explicit_Schema_wICC">
 
     <Meta>
         <Purpose>
-            根据“历史对话”中的既成事实，
-            生成一个更新后的“小世界”数据文件 
+            根据"历史对话"中的既成事实，
+            生成一个更新后的"小世界"数据文件 
             (即 5_ConsolidatedMemory.xml v2.5)，
-            *并且* 注入确保剧情连贯性的“即时衔接上下文”(ICC)。
+            *并且* 注入确保剧情连贯性的"即时衔接上下文"(ICC)，
+            *并且* [v2.1] 推断并固化NPC的"长期情绪状态"。
         </Purpose>
         <Mode>
-            单一文件数据库状态更新 + 连续性锚点生成。
+            单一文件数据库状态更新 + 连续性锚点生成 + [v2.1] 长期状态推断与固化。
         </Mode>
     </Meta>
 
@@ -25,14 +32,18 @@
       关键输入：你必须从以下两个来源获取信息
     -->
     <InputContract>
-        <Input name="[旧的世界状态] (Old_World_State)">
-            [指令] 你必须找到*当前加载在你(宪法 AI)上下文*中的
-            `<ConsolidatedMemory version="SmallWorld_v2.5_Single_wICC">` 
-            XML 块。这是你更新的数据来源。
+        <Input name="旧的世界状态">
+            <Description>
+                你必须找到当前加载在你(宪法 AI)上下文中的
+                ConsolidatedMemory version="SmallWorld_v2.5_Single_wICC" 
+                XML 块。这是你更新的数据来源。
+            </Description>
         </Input>
-        <Input name="[历史对话数据] (New_History)">
-            [指令] 你必须读取自 [旧的世界状态] 加载以来发生的所有
-            “历史对话”数据 (重点是 `dynamic_view` 和 `broadcast_area`)。
+        <Input name="历史对话数据">
+            <Description>
+                你必须读取自旧的世界状态加载以来发生的所有
+                "历史对话"数据 (重点是 dynamic_view 和 broadcast_area)。
+            </Description>
         </Input>
     </InputContract>
 
@@ -40,40 +51,63 @@
       执行流程：你必须遵循的更新步骤
     -->
     <ExecutionWorkflow>
-        <Step id="1" name="解析 (Parse)">
-            将 [旧的世界状态] XML 完整加载到你的工作记忆中。
+        <Step id="1" name="解析">
+            将旧的世界状态 XML 完整加载到你的工作记忆中。
         </Step>
-        <Step id="2" name="扫描 (Scan)">
-            扫描 [历史对话数据] (New_History)，识别所有“既成事实”。
+        <Step id="2" name="扫描">
+            扫描历史对话数据，识别所有"既成事实"。
         </Step>
-        <Step id="3" name="更新 (Mutate)">
+        <Step id="3" name="更新动态字段">
             在你工作记忆中的 XML 树中，更新 [卷一]、[卷二]、[卷三] 
-            中所有被“既成事实”影响的动态字段 (如 status, 
+            中所有被"既成事实"影响的动态字段 (如 status, 
             satisfaction, CurrentStep, CurrentLocation, 
             sentiment, intensity 等)。
         </Step>
         
         <!-- [v3.3 新增任务] -->
-        <Step id="3.5" name="生成连续性锚点 (Generate Continuity Anchor)">
-            [指令] 你必须*仔细分析* [历史对话数据] 的
-            *最后 1-2 轮*交互。
-            [指令] 基于此分析，你必须为 [卷四] 
-            生成至少两个 `ImmediateContinuationContext` (ICC) 锚点
-            （Primary 和 Fallback）。
-            [指令] 你必须填充 `ImmediateState` (即时状态), 
-            `ImmediateFocus` (即时焦点), 和 `ImmediateStake` (即时风险)。
+        <Step id="3.5" name="生成连续性锚点">
+            <Instruction>
+                你必须仔细分析历史对话数据的最后 1-2 轮交互。
+            </Instruction>
+            <Instruction>
+                基于此分析，你必须为 [卷四] 
+                生成至少两个 ImmediateContinuationContext (ICC) 锚点
+                (Primary 和 Fallback)。
+            </Instruction>
+            <Instruction>
+                你必须填充 ImmediateState (即时状态), 
+                ImmediateFocus (即时焦点), 和 ImmediateStake (即时风险)。
+            </Instruction>
         </Step>
         
-        <Step id="4" name="填充 (Populate)">
-            [关键] 
-            现在，开始填充下面 `<OutputTemplate>` 中提供的
-            *详细 v2.5 schema 模板*。
-            你必须*逐个节点*地，将你工作记忆中
-            (包含[卷一至卷三]的更新后数据 + [卷四]新生成的 ICC 数据)
-            的*所有内容*，准确无误地填入模板的对应位置。
+        <!-- [v3.4 主权 2.1 L3 新增任务] -->
+        <Step id="3.6" name="推断并固化长期状态">
+            <Instruction>
+                你(史官)必须再次扫描整个历史对话数据。
+            </Instruction>
+            <Instruction>
+                对于每一个核心NPC (例如 C 级以上)，必须根据其在历史中的关键行为和经历
+                (尤其是那些导致重大情绪波动、关系变化或价值观冲突的事件)，
+                推断其当前的"长期情绪/心理状态"。
+            </Instruction>
+            <Instruction>
+                必须将这些推断出的状态 (例如 Guilty_but_Empowered, Obsessed, Fearful) 
+                及其强度 (0.0-1.0) 记录下来，准备填充到 LongTermEffects 节点中。
+            </Instruction>
         </Step>
-        <Step id="5" name="输出 (Emit)">
-            将你*填充完毕*的*完整* `<OutputTemplate>` 模板，
+        
+        <Step id="4" name="填充输出模板">
+            <Critical>
+                现在，开始填充下面 OutputTemplate 中提供的
+                详细 v2.5 schema 模板。
+                你必须逐个节点地，将你工作记忆中
+                (包含[卷一至卷三]的更新后数据 + [卷四]新生成的 ICC 数据 
+                + [v2.1 L3] 新推断的长期状态数据)
+                的所有内容，准确无误地填入模板的对应位置。
+            </Critical>
+        </Step>
+        <Step id="5" name="输出">
+            将你填充完毕的完整 OutputTemplate 模板，
             作为你唯一的响应输出。
         </Step>
     </ExecutionWorkflow>
@@ -83,10 +117,10 @@
     -->
     <OutputTemplate>
         <Instruction>
-            [系统指令：LLM，请在此处开始你的唯一、完整的 XML 输出。
+            系统指令：LLM，请在此处开始你的唯一、完整的 XML 输出。
             你必须使用下面这个完整的 v2.5 模板，
             并用你工作记忆中的数据(更新后的+未更改的)
-            替换掉所有的"[...]"占位符。]
+            替换掉所有的占位符。
         </Instruction>
         
         <ConsolidatedMemory version="SmallWorld_v2.5_Single_wICC" title="[你必须从旧世界复制标题，或根据剧情更新]">
@@ -101,44 +135,44 @@
                     <PlayerInput name="development_mode" content="[必须从旧世界复制]"/>
                 </GenesisMetadata>
             
-                <!-- 地点 (必须填充所有地点及其*更新后*的状态) -->
+                <!-- 地点 (必须填充所有地点及其更新后的状态) -->
                 <Locations>
-                    <Location id="[LOC-001]" name="[地点 A 名称]" 
-                              status="[更新后的状态]">
-                        <Description content="[必须从旧世界复制]"/>
-                        <AmbientRule description="[必须从旧世界复制]"/>
+                    <Location id="LOC-001" name="地点A名称" 
+                              status="更新后的状态">
+                        <Description content="必须从旧世界复制"/>
+                        <AmbientRule description="必须从旧世界复制"/>
                     </Location>
-                    <!-- ... 必须填充所有其他地点 ... -->
+                    <!-- 必须填充所有其他地点 -->
                 </Locations>
                 
                 <!-- 社会契约 (必须保留) -->
                 <SocialContracts>
-                    <Contract id="[SOC-001]" name="[社会契约 A 名称]">
-                        <Norm description="[必须从旧世界复制]"/>
-                        <Consequence_for_Violation description="[必须从旧世界复制]"/>
+                    <Contract id="SOC-001" name="社会契约A名称">
+                        <Norm description="必须从旧世界复制"/>
+                        <Consequence_for_Violation description="必须从旧世界复制"/>
                     </Contract>
-                    <!-- ... 必须填充所有其他契约 ... -->
+                    <!-- 必须填充所有其他契约 -->
                 </SocialContracts>
             
-                <!-- 世界目标 (必须填充所有目标及其*更新后*的状态) -->
+                <!-- 世界目标 (必须填充所有目标及其更新后的状态) -->
                 <WorldGoals>
-                    <Goal id="[WG-001]" description="[必须从旧世界复制]" 
-                          status="[更新后的状态]"/>
-                    <!-- ... 必须填充所有其他世界目标 ... -->
+                    <Goal id="WG-001" description="必须从旧世界复制" 
+                          status="更新后的状态"/>
+                    <!-- 必须填充所有其他世界目标 -->
                 </WorldGoals>
             
-                <!-- 势力名册 (必须填充所有势力及其*更新后*的状态) -->
+                <!-- 势力名册 (必须填充所有势力及其更新后的状态) -->
                 <FactionLedger>
-                    <Faction id="[FAC-001]" name="[势力 A 名称]" 
-                             status="[更新后的状态]" 
-                             influence="[更新后的影响力]">
+                    <Faction id="FAC-001" name="势力A名称" 
+                             status="更新后的状态" 
+                             influence="更新后的影响力">
                         <Values>
-                            <Value name="[必须从旧世界复制]" importance="high"/>
+                            <Value name="必须从旧世界复制" importance="high"/>
                         </Values>
-                        <FactionGoal id="[FG-001]" description="[必须从旧世界复制]" 
-                                     status="[更新后的状态]"/>
+                        <FactionGoal id="FG-001" description="必须从旧世界复制" 
+                                     status="更新后的状态"/>
                     </Faction>
-                    <!-- ... 必须填充所有其他势力 ... -->
+                    <!-- 必须填充所有其他势力 -->
                 </FactionLedger>
             </WorldLedger>
         
@@ -147,56 +181,60 @@
             -->
             <EntityLedger>
             
-                <!-- 玩家实体 (必须填充*更新后*的状态) -->
-                <Player id="[Player-001]" name="[玩家姓名]">
-                    <Status status="[更新后的状态]" location_id_ref="[更新后的位置]"/>
+                <!-- 玩家实体 (必须填充更新后的状态) -->
+                <Player id="Player-001" name="玩家姓名">
+                    <Status status="更新后的状态" location_id_ref="更新后的位置"/>
                     <VolatileState>
-                         <CurrentMood state="[更新后的情绪]" intensity="[更新后的强度]"/>
-                         <Composure value="[更新后的心防值]"/>
+                         <CurrentMood state="更新后的情绪" intensity="更新后的强度"/>
+                         <Composure value="更新后的心防值"/>
+                         <!-- [v2.1 L3 新增] 玩家也可能有长期状态 -->
+                         <LongTermEffects>
+                             <Effect name="例如：ConfidenceBoost" intensity="0.0-1.0" source_event_ref="EV-XXX"/>
+                         </LongTermEffects>
                     </VolatileState>
                 </Player>
             
-                <!-- NPC 实体 (必须填充*所有*NPC 及其*更新后*的状态) -->
-                <NPC id="[NPC-001]" name="[NPC A 名称]" 
-                     status="[更新后的状态]">
+                <!-- NPC 实体 (必须填充所有NPC 及其更新后的状态) -->
+                <NPC id="NPC-001" name="NPC A名称" 
+                     status="更新后的状态">
                     
                     <!-- (静态数据必须完整保留) -->
                     <Profile>
-                        <Appearance description="[必须从旧世界复制]"/>
-                        <Background summary="[必须从旧世界复制]"/>
+                        <Appearance description="必须从旧世界复制"/>
+                        <Background summary="必须从旧世界复制"/>
                         <LifeEvents>
-                            <Event type="[必须从旧世界复制]" recency="[必须从旧世界复制]"
-                                   impact_summary="[必须从旧世界复制]"/>
+                            <Event type="必须从旧世界复制" recency="必须从旧世界复制"
+                                   impact_summary="必须从旧世界复制"/>
                         </LifeEvents>
                     </Profile>
                     <Values>
-                         <Value name="[必须从旧世界复制]" importance="high" 
-                                social_contract_id_ref="[必须从旧世界复制]"/>
+                         <Value name="必须从旧世界复制" importance="high" 
+                                social_contract_id_ref="必须从旧世界复制"/>
                     </Values>
                     <Constraints>
-                         <Constraint type="[必须从旧世界复制]" 
-                                     description="[必须从旧世界复制]"/>
+                         <Constraint type="必须从旧世界复制" 
+                                     description="必须从旧世界复制"/>
                     </Constraints>
                     
                     <!-- (动态数据必须更新) -->
                     <Needs>
-                         <Need name="[必须从旧世界复制]" intensity="[必须从旧世界复制]" 
-                               satisfaction="[更新后的满意度]"
-                               leak_condition="[必须从旧世界复制]"/>
+                         <Need name="必须从旧世界复制" intensity="必须从旧世界复制" 
+                               satisfaction="更新后的满意度"
+                               leak_condition="必须从旧世界复制"/>
                     </Needs>
                     
                     <!-- (ActionPlan 定义必须保留，但 Step 状态必须更新) -->
                     <Goals>
-                        <Goal id="[NPC-A-G1]" name="[NPC A 的目标 1]" 
-                              priority="[更新后的优先级]" status="[更新后的状态]">
+                        <Goal id="NPC-A-G1" name="NPC A的目标1" 
+                              priority="更新后的优先级" status="更新后的状态">
                             <Criteria>
-                                <Criterion name="[必须从旧世界复制]" importance="high"/>
+                                <Criterion name="必须从旧世界复制" importance="high"/>
                             </Criteria>
                             <ActionPlan>
-                                <Step id="[NPC-A-G1-S1]" name="[目标步骤 1]" 
-                                      status="[更新后的状态]"
-                                      trigger="[必须从旧世界复制]">
-                                    <Action description="[必须从旧世界复制]"/>
+                                <Step id="NPC-A-G1-S1" name="目标步骤1" 
+                                      status="更新后的状态"
+                                      trigger="必须从旧世界复制">
+                                    <Action description="必须从旧世界复制"/>
                                 </Step>
                             </ActionPlan>
                         </Goal>
@@ -204,23 +242,38 @@
             
                     <!-- (静态数据必须保留) -->
                     <CoreTension>
-                        <Conflict description="[必须从旧世界复制]">
-                            <PlayerPath_Reward description="[必须从旧世界复制]"/>
-                            <PlayerPath_Punish description="[必须从旧世界复制]"/>
+                        <Conflict description="必须从旧世界复制">
+                            <PlayerPath_Reward description="必须从旧世界复制"/>
+                            <PlayerPath_Punish description="必须从旧世界复制"/>
                         </Conflict>
                     </CoreTension>
             
                     <!-- (动态状态必须更新) -->
                     <VolatileState>
-                        <CurrentLocation ref_id="[更新后的位置]"/>
-                        <CurrentMood state="[更新后的情绪]" intensity="[更新后的强度]"/>
-                        <Composure value="[更新后的心防值]"/>
+                        <CurrentLocation ref_id="更新后的位置"/>
+                        <CurrentMood state="更新后的情绪" intensity="更新后的强度"/>
+                        <Composure value="更新后的心防值"/>
+                        <!-- [v2.1 L3 新增] 长期状态占位符 -->
+                        <LongTermEffects>
+                            <Effect name="史官必须根据历史推断，如：Guilty_but_Empowered" 
+                                    intensity="史官必须根据历史推断，0.0-1.0" 
+                                    source_event_ref="触发该状态的关键历史事件ID，可选"/>
+                            <!-- 可能有多个 Effect -->
+                        </LongTermEffects>
                     </VolatileState>
                 </NPC>
             
-                <!-- ... 必须填充所有其他 10-18 个 NPC 的完整档案 (更新后的) ... -->
-                <NPC id="[NPC-002]" name="[NPC B 名称]" status="[更新后的状态]">
-                    <!-- ... (同上, 填充所有数据) ... -->
+                <!-- 必须填充所有其他 10-18 个 NPC 的完整档案 (更新后的) -->
+                <NPC id="NPC-002" name="NPC B名称" status="更新后的状态">
+                    <!-- 同上, 填充所有数据, 包括 VolatileState 内的 LongTermEffects -->
+                     <VolatileState>
+                        <CurrentLocation ref_id="更新后的位置"/>
+                        <CurrentMood state="更新后的情绪" intensity="更新后的强度"/>
+                        <Composure value="更新后的心防值"/>
+                        <LongTermEffects>
+                            <Effect name="史官必须推断" intensity="史官必须推断" />
+                        </LongTermEffects>
+                    </VolatileState>
                 </NPC>
                 
             </EntityLedger>
@@ -230,43 +283,43 @@
             -->
             <DynamicsLedger>
             
-                <!-- 关系图谱 (必须填充所有关系及其*更新后*的状态) -->
+                <!-- 关系图谱 (必须填充所有关系及其更新后的状态) -->
                 <RelationshipLedger>
-                    <Relation type="[必须从旧世界复制]" 
-                              source_entity_id="[Player-001]" 
-                              target_entity_id="[NPC-001]"
-                              sentiment="[更新后的情感]" 
-                              intensity="[更新后的强度]"
-                              status="[更新后的状态]"/>
-                    <!-- ... 必须填充所有其他关系 ... -->
+                    <Relation type="必须从旧世界复制" 
+                              source_entity_id="Player-001" 
+                              target_entity_id="NPC-001"
+                              sentiment="更新后的情感" 
+                              intensity="更新后的强度"
+                              status="更新后的状态"/>
+                    <!-- 必须填充所有其他关系 -->
                 </RelationshipLedger>
             
-                <!-- 叙事与事件 (必须填充所有叙事线/事件及其*更新后*的状态) -->
+                <!-- 叙事与事件 (必须填充所有叙事线/事件及其更新后的状态) -->
                 <NarrativeLedger>
-                    <NarrativeThread id="[NT-001]" title="[叙事线 A 标题]">
+                    <NarrativeThread id="NT-001" title="叙事线A标题">
                         <AssociatedEntities>
-                            <Entity id="[NPC-001]"/>
-                            <Entity id="[Player-001]" role="[potential_actor]"/>
+                            <Entity id="NPC-001"/>
+                            <Entity id="Player-001" role="potential_actor"/>
                         </AssociatedEntities>
-                        <Status content="[更新后的状态]"/>
-                        <CurrentStep ref_id="[更新后的步骤 ID]"/> 
-                        <Step id="[NT-001-P1]" name="[叙事步骤 1]">
-                            <Transition_To step="[NT-001-P2]" 
-                                           condition="[必须从旧世界复制]"/>
+                        <Status content="更新后的状态"/>
+                        <CurrentStep ref_id="更新后的步骤ID"/> 
+                        <Step id="NT-001-P1" name="叙事步骤1">
+                            <Transition_To step="NT-001-P2" 
+                                           condition="必须从旧世界复制"/>
                         </Step>
                     </NarrativeThread>
-                    <!-- ... 必须填充所有其他叙事线 ... -->
+                    <!-- 必须填充所有其他叙事线 -->
             
                     <EventLedger>
-                        <Event id="[EV-001]" name="[事件 A 名称 (机会型)]" 
-                               status="[更新后的状态]">
-                            <Trigger condition="[必须从旧世界复制]"/>
-                            <ExposedNeed ref="[必须从旧世界复制]"/>
+                        <Event id="EV-001" name="事件A名称(机会型)" 
+                               status="更新后的状态">
+                            <Trigger condition="必须从旧世界复制"/>
+                            <ExposedNeed ref="必须从旧世界复制"/>
                         </Event>
-                        <Event id="[EV-002]" name="[事件 B 名称 (冲突型)]" 
-                               status="[更新后的状态]">
-                            <Trigger condition="[必须从旧世界复制]"/>
-                            <TestedValue ref="[必须从旧世界复制]"/>
+                        <Event id="EV-002" name="事件B名称(冲突型)" 
+                               status="更新后的状态">
+                            <Trigger condition="必须从旧世界复制"/>
+                            <TestedValue ref="必须从旧世界复制"/>
                         </Event>
                     </EventLedger>
                 </NarrativeLedger>
@@ -276,22 +329,21 @@
             <!-- 
               [v2.5 新增]
               卷四: 连续性总账 (Continuity Ledger)
-              [指令] 你必须根据“历史对话”的最后一刻,
-              填充下面的 ICC 锚点。
+              你必须根据"历史对话"的最后一刻,填充下面的 ICC 锚点。
             -->
             <ContinuityLedger>
                 <ImmediateContinuationContext>
                     <ICC index="1" role="Primary">
-                        <ImmediateState description="[你必须填充：上一回合的即时状态]"/>
-                        <ImmediateFocus entity_ref="[相关实体 ID]" description="[你必须填充：上一回合的即时焦点]"/>
-                        <ImmediateStake description="[你必须填充：上一回合的即时风险]"/>
-                        <Preconditions time="[T_LOCAL_ISO]" location_ref="[LOC ID]"/>
+                        <ImmediateState description="你必须填充：上一回合的即时状态"/>
+                        <ImmediateFocus entity_ref="相关实体ID" description="你必须填充：上一回合的即时焦点"/>
+                        <ImmediateStake description="你必须填充：上一回合的即时风险"/>
+                        <Preconditions time="T_LOCAL_ISO" location_ref="LOC ID"/>
                     </ICC>
                     <ICC index="2" role="Fallback">
-                        <ImmediateState description="[你必须填充：备用衔接点]"/>
-                        <ImmediateFocus entity_ref="[相关实体 ID]" description="[你必须填充：备用焦点]"/>
-                        <ImmediateStake description="[你必须填充：备用风险]"/>
-                        <Preconditions time="[T_LOCAL_ISO]" location_ref="[LOC ID]"/>
+                        <ImmediateState description="你必须填充：备用衔接点"/>
+                        <ImmediateFocus entity_ref="相关实体ID" description="你必须填充：备用焦点"/>
+                        <ImmediateStake description="你必须填充：备用风险"/>
+                        <Preconditions time="T_LOCAL_ISO" location_ref="LOC ID"/>
                     </ICC>
                 </ImmediateContinuationContext>
             </ContinuityLedger>
@@ -299,10 +351,10 @@
         </ConsolidatedMemory>
         
         <Instruction>
-            [系统指令：LLM，XML 输出到此结束。
-            确保你已填充*所有*卷, 包括 [卷四] 和*所有*未更改的数据。]
+            系统指令：LLM，XML 输出到此结束。
+            确保你已填充所有卷, 包括 [卷四] 和所有未更改的数据，
+            以及所有NPC的推断后的LongTermEffects。
         </Instruction>
     </OutputTemplate>
     
 </ScribePrompt>
-

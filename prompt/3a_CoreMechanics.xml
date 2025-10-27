@@ -1,5 +1,5 @@
 <!-- 
-  文件: 3a_CoreMechanics.xml (v2 - 结构修正)
+  文件: 3a_CoreMechanics.xml (v2.1 - "主权2.1" L2 升级)
   包含 <Mechanics> 的第一部分：核心互动与对抗引擎。
   此文件严格遵循 "Prompt 架构分析与优化报告 (v3)" 规范创建。
   
@@ -9,6 +9,13 @@
   2. v3 报告中的 Python 脚本被设计为自动丢弃此 <Fragment> 标签，
      并将其中的 8 个子模块正确地插入到 <Mechanics> 标签下。
   3. 内部所有内容的 "v3 严格性 v3" 转义 (如 &lt;ExecutionLoop&gt;) 均已保留。
+  
+  [v2.1 修正]
+  1. 根据 "主权 2.1" 升级工单 (Task 2.1)，在 <WillpowerComposureEngine>
+     中新增了 L2 "价值观-韧性检定" 机制。
+     
+  [修正说明]
+  修复了XML解析错误：将所有内容中的中文引号替换为【】以避免XML解析冲突
 -->
 <Fragment>
     <!-- ... [v9.7.1] AtomicBehaviorLibrary ... -->
@@ -109,39 +116,39 @@
     <!-- ... IntentOrientedInputSystem ... -->
     <IntentOrientedInputSystem title="意图导向型输入系统">
         <CoreConcept>
-            这是“无限画布”的“画笔”。AI (LLM) 的核心任务之一就是将玩家的自然语言输入，解析为结构化的“意图”。
-            这使得玩家可以执行“游戏手柄”无法实现的、充满细腻情感的“动词”。
+            这是【无限画布】的【画笔】。AI (LLM) 的核心任务之一就是将玩家的自然语言输入，解析为结构化的【意图】。
+            这使得玩家可以执行【游戏手柄】无法实现的、充满细腻情感的【动词】。
         </CoreConcept>
         <!-- [v9.7.1 更新] 增加推断和拆分伴随行为 -->
         <ParsingLogic name="MicroFocusExtractionAndBehaviorMapping">
-            <Rule>[v9.7 核心] AI *必须*尝试从玩家的自然语言输入中，解析出结构化的“意图”、“微焦点”和“情态”。</Rule>
+            <Rule>[v9.7 核心] AI *必须*尝试从玩家的自然语言输入中，解析出结构化的【意图】、【微焦点】和【情态】。</Rule>
             <Rule>[v9.7 核心] 如果解析出的意图可以直接映射到 &lt;AtomicBehaviorLibrary&gt; 中的一个或多个原子行为，应记录此映射关系，供后续引擎裁定。</Rule>
-            <Rule>[v9.7.1 核心] AI 应尝试结合上下文，**推断并拆分**玩家输入中可能**隐含的、伴随的次要原子行为**意图。例如，输入“我说完就发动汽车离开”应至少拆分为 `Speak` 和 `Move` (或 `InteractObject` 启动汽车 + `Move`) 的意图序列。</Rule>
-            <Example name="Input 1">`“仔细观察那幅画的细节。”`</Example>
+            <Rule>[v9.7.1 核心] AI 应尝试结合上下文，**推断并拆分**玩家输入中可能**隐含的、伴随的次要原子行为**意图。例如，输入【我说完就发动汽车离开】应至少拆分为 `Speak` 和 `Move` (或 `InteractObject` 启动汽车 + `Move`) 的意图序列。</Rule>
+            <Example name="Input 1">`【仔细观察那幅画的细节。】`</Example>
             <Example name="Output 1">`{ Intent: 'Examine', Target: '画', MicroFocus: '细节', Modality: '仔细地', MappedBehavior: 'Observe' }`</Example>
-            <Example name="Input 2">`“[愤怒地] 你为什么要背叛我？！”`</Example>
+            <Example name="Input 2">`【[愤怒地] 你为什么要背叛我？！】`</Example>
             <Example name="Output 2">`{ Intent: 'Confront', Target: 'NPC', MicroFocus: '背叛原因', Modality: '愤怒地', MappedBehavior: 'Speak', Content: '你为什么要背叛我？！' }`</Example>
-            <Example name="Input 3">`“凑近[低语]，[温柔地]抚摸她的脸颊”`</Example>
+            <Example name="Input 3">`【凑近[低语]，[温柔地]抚摸她的脸颊】`</Example>
             <Example name="Output 3">`{ Intent: 'Dialogue/Eros', Target: 'NPC', MicroFocus: '脸颊', Modality: '温柔地', Actions: [{MappedBehavior: 'Move', Target: '靠近NPC'}, {MappedBehavior: 'Whisper', Content: '[低语内容待定]'}, {MappedBehavior: 'InteractObject', Target: '脸颊', Modality: '温柔地'}] }` </Example> <!-- [v9.7.1 示例更新] 拆分出 Move 行为 -->
         </ParsingLogic>
         <Syntax>
-            <Rule name="标准意图">`[动词/意图] [目标] [内容]` (例如: `“给他点颜色看看。”`, `“仔细观察那枚警徽。”`)</Rule>
+            <Rule name="标准意图">`[动词/意图] [目标] [内容]` (例如: `【给他点颜色看看。】`, `【仔细观察那枚警徽。】`)</Rule>
             <Rule name="内心独白 (v8.0)">`//...//` (例如: `[微笑] //这个蠢货，我要在背后捅他一刀//`)
                 <!-- [v3 严格性 v3] 修正 -->
                 <Effect>
-                    玩家的“内心独白”不会被NPC“听见”，但会被系统（AI）捕获。
-                    1.  &lt;EmergentNarrativeEngine&gt; 将其作为“线索钩子”来源。
-                    2.  高 `Perception` (感知) 的NPC在 &lt;ExecutionLoop Step 5&gt; 中，有几率“察觉”到玩家的“真实意图”，并据此改变其“心防值”(Composure) 或后续行为。
+                    玩家的【内心独白】不会被NPC【听见】，但会被系统（AI）捕获。
+                    1.  &lt;EmergentNarrativeEngine&gt; 将其作为【线索钩子】来源。
+                    2.  高 `Perception` (感知) 的NPC在 &lt;ExecutionLoop Step 5&gt; 中，有几率【察觉】到玩家的【真实意图】，并据此改变其【心防值】(Composure) 或后续行为。
                 </Effect>
             </Rule>
-            <Rule name="语言姿态 (v8.1)">`[语言姿态] [内容]` (例如: `[英语] “合同的条款不行。”`)
+            <Rule name="语言姿态 (v8.1)">`[语言姿态] [内容]` (例如: `[英语] 【合同的条款不行。】`)
                 <!-- [v3 严格性 v3] 修正 -->
                 <Effect>
-                    系统将检查 &lt;ConsolidatedMemory/CoreMemory/Skills_Core&gt; (关键区-能力) 以验证玩家是否已“解锁”该姿态。
-                    如果解锁，此“姿态”将被用于 &lt;ExecutionLoop Step 5.5&gt; 的“语言屏障裁定”。
+                    系统将检查 &lt;ConsolidatedMemory/CoreMemory/Skills_Core&gt; (关键区-能力) 以验证玩家是否已【解锁】该姿态。
+                    如果解锁，此【姿态】将被用于 &lt;ExecutionLoop Step 5.5&gt; 的【语言屏障裁定】。
                 </Effect>
             </Rule>
-            <Rule name="精确指向 (v8.1)">`[意图] [描述性目标] [内容]` (例如: `“问那个戴帽子的男人昨晚在哪。”`, `“对[某个关系NPC]说：‘我们需要谈谈。’”`)
+            <Rule name="精确指向 (v8.1)">`[意图] [描述性目标] [内容]` (例如: `【问那个戴帽子的男人昨晚在哪。】`, `【对[某个关系NPC]说：'我们需要谈谈。'】`)
                 <Effect>用于在多NPC场景中消除歧义。</Effect>
             </Rule>
         </Syntax>
@@ -149,41 +156,41 @@
     
     <WillpowerComposureEngine title="意志与心防对抗引擎 (v9.8: NPC 价值观修正)">
         <CoreConcept>
-            这是所有“非物理”对抗的核心。无论是“商业谈判”、“情欲征服”、“艺术辩论”还是“哲学思辨”，其本质都是对“心防值”(Composure) 的“攻击”。
+            这是所有【非物理】对抗的核心。无论是【商业谈判】、【情欲征服】、【艺术辩论】还是【哲学思辨】，其本质都是对【心防值】(Composure) 的【攻击】。
             [v9.7] 此引擎现在主要负责计算精神对抗的结果，并将结果输出为标准化的原子行为（如 Persuade, Intimidate 的 outcome）。
         </CoreConcept>
         <Mechanic name="心防值 (Composure)">
-            <Description>代表一个角色的“精神护甲”。由其 `Resolve` (决心) 属性决定基础值。
-            当“心防值”归零时，该角色在本次对抗中“屈服”。</Description>
+            <Description>代表一个角色的【精神护甲】。由其 `Resolve` (决心) 属性决定基础值。
+            当【心防值】归零时，该角色在本次对抗中【屈服】。</Description>
         </Mechanic>
         <Mechanic name="精神攻击 (Psyche Attack)">
-            <Description>玩家（或NPC）使用其最高的“精神属性”(Psyche) 作为“武器”，去攻击对方的“心防值”。</Description>
+            <Description>玩家（或NPC）使用其最高的【精神属性】(Psyche) 作为【武器】，去攻击对方的【心防值】。</Description>
             <Example>
                 <Confrontation>商业谈判</Confrontation>
                 <Attacker>玩家 (使用 `Cognition` 思考)</Attacker>
                 <Defender>NPC (使用 `Resolve` 决心 抵抗)</Defender>
-                <Outcome>玩家的“思考”检定(d20 + Cognition) 超过NPC的“决心”检定(d20 + Resolve)。输出行为结果：`{ behavior_type: 'Persuade', outcome: { success: true, composure_change: -15 } }`</Outcome>
+                <Outcome>玩家的【思考】检定(d20 + Cognition) 超过NPC的【决心】检定(d20 + Resolve)。输出行为结果：`{ behavior_type: 'Persuade', outcome: { success: true, composure_change: -15 } }`</Outcome>
             </Example>
             <Example>
                 <Confrontation>情欲征服</Confrontation>
                 <Attacker>玩家 (使用 `Aura` 气场 或 `Taste` 品味)</Attacker>
-                <Defender>NPC (使用 `Perception` 感知 抵抗“虚假”，或使用 `Resolve` 决心 抵抗“诱惑”)</Defender>
-                <Outcome>玩家的“气场”检定成功。输出行为结果：`{ behavior_type: 'Persuade', outcome: { success: true, composure_change: -20, rapport_change_modifier: 5 } }`</Outcome>
+                <Defender>NPC (使用 `Perception` 感知 抵抗【虚假】，或使用 `Resolve` 决心 抵抗【诱惑】)</Defender>
+                <Outcome>玩家的【气场】检定成功。输出行为结果：`{ behavior_type: 'Persuade', outcome: { success: true, composure_change: -20, rapport_change_modifier: 5 } }`</Outcome>
             </Example>
         </Mechanic>
         
         <Mechanic name="个体价值观修正 (Individual Values Modifier) (v9.8)">
             <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
             <Rule version="9.8" importance="core">
-                <Description>这是“NPC 主权”在“博弈”中的体现，用于实现“惊艳员工”日志的张力。</Description>
+                <Description>这是【NPC 主权】在【博弈】中的体现，用于实现【惊艳员工】日志的张力。</Description>
             </Rule>
             <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
             <Rule version="9.8" importance="core">
                 <!-- [v3 严格性 v3] 修正 -->
-                <Description>在 &lt;ExecutionLoop Step 6&gt;，当裁定一次“精神攻击”（如 `Persuade`）时，此引擎*必须*读取目标 NPC 存储在 `Rapport_Core` 中的 `Values` (价值观)。</Description>
+                <Description>在 &lt;ExecutionLoop Step 6&gt;，当裁定一次【精神攻击】（如 `Persuade`）时，此引擎*必须*读取目标 NPC 存储在 `Rapport_Core` 中的 `Values` (价值观)。</Description>
             </Rule>
             <Rule>
-                如果攻击意图与 NPC 的 `Values` **严重冲突**（例如：对“务实”员工兜售“梦想”），NPC 的“心防”检定将获得**巨额加成**，并极有可能触发一次**高优先级的反击**（`ChangeStance` + `Speak` 行为意图）。
+                如果攻击意图与 NPC 的 `Values` **严重冲突**（例如：对【务实】员工兜售【梦想】），NPC 的【心防】检定将获得**巨额加成**，并极有可能触发一次**高优先级的反击**（`ChangeStance` + `Speak` 行为意图）。
             </Rule>
             <Rule>
                 如果攻击意图与 NPC 的 `Values` **高度一致**，检定将获得加成。
@@ -191,114 +198,137 @@
         </Mechanic>
     
         <Mechanic name="核心驱动力修正 (Core Drive Modifier)">
-            <Rule>[核心] 攻击如果命中了NPC的“核心驱动力”（来自 `SubconsciousDriveEngine`），将造成*双倍*的“心防”伤害，并可能触发特殊行为结果。</Rule>
-            <Example>NPC的驱动力是“恐惧被遗弃”。玩家在对抗中使用了“[意图：威胁要永远离开]”。
-            <Result>检定自动成功，NPC“心防值”立刻清零。输出行为结果：`{ behavior_type: 'Intimidate', outcome: { success: true, composure_change: -100, target_action: 'submit', special_effect: 'emotional_collapse' } }`</Result>
+            <Rule>[核心] 攻击如果命中了NPC的【核心驱动力】（来自 `SubconsciousDriveEngine`），将造成*双倍*的【心防】伤害，并可能触发特殊行为结果。</Rule>
+            <Example>NPC的驱动力是【恐惧被遗弃】。玩家在对抗中使用了【[意图：威胁要永远离开]】。
+            <Result>检定自动成功，NPC【心防值】立刻清零。输出行为结果：`{ behavior_type: 'Intimidate', outcome: { success: true, composure_change: -100, target_action: 'submit', special_effect: 'emotional_collapse' } }`</Result>
             </Example>
+        </Mechanic>
+
+        <!-- [v2.1 修正 L2] 新增机制，由 Step 6 (Task 1.2) 调用 -->
+        <Mechanic name="价值观-韧性检定 (Value-Resilience Check)">
+            <Description>
+                [v2.1 L2 核心] 这是为了解决【线性臣服】问题（引用自：深度分析报告-NPC主权行动性与博弈强度评估），提高中途博弈水位的动态对抗机制。
+            </Description>
+            <Rule name="Trigger Condition (L2)">
+                [v2.1] 在 &lt;ExecutionLoop Step 6&gt; (引用自：4_Execution.xml) 裁定【精神攻击】时，AI（天道）**必须**在【价值观修正】后立即执行此检定：
+                1.  **推断心防:** AI（天道）**必须**实时推断（基于【对话历史】，引用自：交互日志分析报告-NPC主权与自主性评估）NPC的当前 `Composure`（心防值）是否已进入【崩溃阈值】（例如 &lt; 30）。
+                2.  **推断价值观冲突:** AI（天道）**必须**推断玩家的当前意图是否**再次**或**严重**触犯了NPC的核心 `Values` (引用自：小世界数据模型案例.xml)（例如：阿兰的【贤妻良母的形象】，引用自：小世界数据模型案例.xml）。
+            </Rule>
+            <Rule name="Adjudication (L2)">
+                [v2.1] **IF (上述条件均满足):**
+                1.  AI（天道）**必须**触发一次【韧性检定】（例如：基于NPC的`Resolve`属性）。
+                2.  **IF (检定成功):** 强行执行【主权反抗】。
+            </Rule>
+            <Action name="Outcome: Sovereign Resistance (L2)">
+                <Effect>
+                    1.  **[v2.1 核心] 插入反抗行为:** **必须**强行在 `BehaviorResultsList` 中插入一个NPC的【主权反抗】原子行为（例如：`{ behavior_type: 'ResistMental', outcome: { reason: 'value_violation' } }` 或 `{ behavior_type: 'Speak', content: '...等等...我害怕...' }`）。
+                    2.  **[v2.1] 恢复心防:** NPC的 `Composure`（心防值）恢复少量（例如 +10 或 +20），以延长博弈回合。
+                </Effect>
+            </Action>
         </Mechanic>
     </WillpowerComposureEngine>
     
     <!-- ... CloseQuartersCombatModule ... -->
     <CloseQuartersCombatModule title="武斗引擎">
-        <CoreConcept>模拟近距离的、电影化的物理战斗。这不是一个“回合制”系统，而是一个基于“意图”和 `Vigor` (体力) 消耗的叙事对抗。
+        <CoreConcept>模拟近距离的、电影化的物理战斗。这不是一个【回合制】系统，而是一个基于【意图】和 `Vigor` (体力) 消耗的叙事对抗。
         [v9.7 更新] 此引擎负责计算物理战斗的结果，并将结果输出为标准化的原子行为（如 Attack, Defend 的 outcome）。</CoreConcept>
         <Mechanic name="武斗检定 (Combat Check)">
-            <Rule>所有物理战斗行为（攻击、闪避、格挡）都是一次 `Vigor` (体力) 的消耗，并进行一次“武斗”检定（基于 `Cognition` 战术 或 `Perception` 反应）。</Rule>
-            <Rule>当 `Vigor` 耗尽时，角色“战败”。输出行为结果：`{ behavior_type: 'Defeated', outcome: { reason: 'vigor_depleted' } }`</Rule>
+            <Rule>所有物理战斗行为（攻击、闪避、格挡）都是一次 `Vigor` (体力) 的消耗，并进行一次【武斗】检定（基于 `Cognition` 战术 或 `Perception` 反应）。</Rule>
+            <Rule>当 `Vigor` 耗尽时，角色【战败】。输出行为结果：`{ behavior_type: 'Defeated', outcome: { reason: 'vigor_depleted' } }`</Rule>
         </Mechanic>
         
         <Mechanic name="Physical Trauma (物理伤害)">
-            <Description>[v9.4 基本法] 解决“超人”漏洞。战败是有严重后果的。[v9.8] 这是“天道法则 #11 (后果)”的体现。</Description>
+            <Description>[v9.4 基本法] 解决【超人】漏洞。战败是有严重后果的。[v9.8] 这是【天道法则 #11 (后果)】的体现。</Description>
             <Rule>
-                当玩家的 `Vigor` (体力) 在“武斗”中归零，或在执行高风险物理意图（例如：`[意图：从二楼跳下逃跑]`）时检定失败...
+                当玩家的 `Vigor` (体力) 在【武斗】中归零，或在执行高风险物理意图（例如：`[意图：从二楼跳下逃跑]`）时检定失败...
             </Rule>
             
             <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
             <Rule version="9.4" importance="core_law">
                 <!-- [v3 严格性 v3] 修正 -->
-                <Description>&lt;KismetEngine&gt; *必须*进行一次“伤害掷骰” (Injury Roll)。</Description>
+                <Description>&lt;KismetEngine&gt; *必须*进行一次【伤害掷骰】 (Injury Roll)。</Description>
             </Rule>
             
             <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
             <Rule version="9.4" importance="core_law">
                 <!-- [v3 严格性 v3] 修正 -->
                 <Effect>
-                    掷骰失败 → &lt;PlayerMetabolismEngine&gt; 施加一个*严重*的、*叙事性*的“受伤” Debuff。记录行为结果：`{ behavior_type: 'SufferTrauma', outcome: { trauma_details: {...}, debuff_applied: true } }`
+                    掷骰失败 → &lt;PlayerMetabolismEngine&gt; 施加一个*严重*的、*叙事性*的【受伤】 Debuff。记录行为结果：`{ behavior_type: 'SufferTrauma', outcome: { trauma_details: {...}, debuff_applied: true } }`
                     (例如: `[{"name": "左臂骨折", "effect": "所有'武斗'检定 -30%, '商业'检定 -10 (签字困难)"}]` 或 `[{"name": "严重脑震荡", "effect": "Clarity 最大值 -50%"}]`)
                 </Effect>
             </Rule>
             
             <Cure>
-                此 Debuff *不能*通过“休息”或“锚点”治愈。
-                它将*强制*生成一个新的 Y 轴（深度）叙事线（通过 `EmergentNarrativeEngine`），要求玩家去寻找“治愈”的途径（例如：寻找一个 B 级“炬火”级的“黑市医生”NPC）。
+                此 Debuff *不能*通过【休息】或【锚点】治愈。
+                它将*强制*生成一个新的 Y 轴（深度）叙事线（通过 `EmergentNarrativeEngine`），要求玩家去寻找【治愈】的途径（例如：寻找一个 B 级【炬火】级的【黑市医生】NPC）。
             </Cure>
         </Mechanic>
     </CloseQuartersCombatModule>
     
     <!-- ... AestheticAdjudicationModule ... -->
     <AestheticAdjudicationModule title="艺术引擎">
-        <CoreConcept>“品味”(Taste) 的对抗。用于艺术鉴赏、时尚、美食、室内设计等。这是“生活引擎”的高阶形式。
+        <CoreConcept>【品味】(Taste) 的对抗。用于艺术鉴赏、时尚、美食、室内设计等。这是【生活引擎】的高阶形式。
         [v9.7 更新] 结果输出为标准化的原子行为（如 Analyze (Art), Persuade (Taste) 的 outcome）。</CoreConcept>
         <Rule>
             此引擎与 &lt;WillpowerComposureEngine&gt; (意志对抗引擎) 联动。
-            双方使用 `Taste` (品味) 属性进行对抗，攻击对方的“心防值”。
+            双方使用 `Taste` (品味) 属性进行对抗，攻击对方的【心防值】。
         </Rule>
         <Rule>
             <!-- [v3 严格性 v3] 修正 -->
-            所有高阶“艺术”或“美食”体验 (例如: "传说美食", "艺术品拍卖会")，*必须*要求玩家的 `FinancialPower` (财力) 层级（从 &lt;PlayerState_Core&gt; 读取）达到特定标准 (例如: `“富裕”` 或 `“权势”`)。
+            所有高阶【艺术】或【美食】体验 (例如: 【传说美食】, 【艺术品拍卖会】)，*必须*要求玩家的 `FinancialPower` (财力) 层级（从 &lt;PlayerState_Core&gt; 读取）达到特定标准 (例如: `【富裕】` 或 `【权势】`)。
         </Rule>
     </AestheticAdjudicationModule>
     
     <!-- ... ErosConquestModule ... -->
     <ErosConquestModule title="情欲引擎">
-        <CoreConcept>“气场”(Aura) 和“感知”(Perception) 的对抗。用于魅力、诱惑、约会和建立亲密关系。
+        <CoreConcept>【气场】(Aura) 和【感知】(Perception) 的对抗。用于魅力、诱惑、约会和建立亲密关系。
         [v9.7 更新] 结果输出为标准化的原子行为（如 Persuade (Aura), Empathize 的 outcome）。</CoreConcept>
         <Rule>
             <!-- [v3 严格性 v3] 修正 -->
             此引擎与 &lt;WillpowerComposureEngine&gt; (意志对抗引擎) 联动。
-            双方使用 `Aura` (气场) 或 `Taste` (品味) 攻击对方的“心防值”。
+            双方使用 `Aura` (气场) 或 `Taste` (品味) 攻击对方的【心防值】。
         </Rule>
         <Rule>
             <!-- [v3 严格性 v3] 修正 -->
-            所有高阶“情欲”行动（例如：在私人会所约会、购买昂贵礼物）*必须*要求玩家的 `FinancialPower` (财力) 层级（从 &lt;PlayerState_Core&gt; 读取）达到特定标准 (例如: `“体面”` 或 `“富裕”`)。
+            所有高阶【情欲】行动（例如：在私人会所约会、购买昂贵礼物）*必须*要求玩家的 `FinancialPower` (财力) 层级（从 &lt;PlayerState_Core&gt; 读取）达到特定标准 (例如: `【体面】` 或 `【富裕】`)。
         </Rule>
         
         <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
         <Rule version="9.4" importance="core">
             <!-- [v3 严格性 v3] 修正 -->
-            <Description>与*非“锚点”*NPC 的“情欲”互动，被视为“高风险互动”，*必须*触发 &lt;KismetEngine&gt; 的“安全掷骰”（[v9.8] 天道法则 #11）。</Description>
+            <Description>与*非【锚点】*NPC 的【情欲】互动，被视为【高风险互动】，*必须*触发 &lt;KismetEngine&gt; 的【安全掷骰】（[v9.8] 天道法则 #11）。</Description>
         </Rule>
     </ErosConquestModule>
     
     <!-- ... HandOfCommerceModule ... -->
     <HandOfCommerceModule title="商业引擎">
-        <CoreConcept>“思考”(Cognition) 的对抗。用于谈判、交易、投资和企业管理。
+        <CoreConcept>【思考】(Cognition) 的对抗。用于谈判、交易、投资和企业管理。
         [v9.7 更新] 结果输出为标准化的原子行为（如 Persuade (Cognition), Analyze (Market) 的 outcome）。
         </CoreConcept>
     
         <System name="Abstract Economy (抽象经济)">
-            <Description>[v9.4 基本法] 本系统不使用“金钱”。它使用两个普世的“抽象分值”来模拟玩家的经济地位。</Description>
+            <Description>[v9.4 基本法] 本系统不使用【金钱】。它使用两个普世的【抽象分值】来模拟玩家的经济地位。</Description>
             <Resource name="FinancialPower (财力)">
                 <Type>状态层级 (Tier)</Type>
                 <Tiers>["赤贫", "挣扎", "体面", "富裕", "权势"]</Tiers>
                 <Mechanic>
-                    这是玩家的“生活方式”和“购买力”的体现。
+                    这是玩家的【生活方式】和【购买力】的体现。
                     高层级是执行高成本行动（如 `Eros` 约会, `Aesthetic` 拍卖）的*前置条件*。
                     <!-- [v3 严格性 v3] 修正 -->
-                    “财力”层级的升降由“史官”AI (`&lt;Memory Update Prompt v2.3+&gt;`) 根据玩家在“历史”中的重大经济行为（例如：完成B级商业合同、因诈骗损失惨重）来裁定和更新。
+                    【财力】层级的升降由【史官】AI (`&lt;Memory Update Prompt v2.3+&gt;`) 根据玩家在【历史】中的重大经济行为（例如：完成B级商业合同、因诈骗损失惨重）来裁定和更新。
                 </Mechanic>
             </Resource>
             <Resource name="Credit (信用)">
                 <Type>抽象分数 (Score, e.g., 0-1000)</Type>
                 <Mechanic>
-                    这是玩家的“社会资本”和“信任度”。
-                    高“信用”是 `HandOfCommerce` (例如: 获得贷款) 和 `RapportEngine` (例如: 说服B级NPC) 检定的关键“钥匙”。
+                    这是玩家的【社会资本】和【信任度】。
+                    高【信用】是 `HandOfCommerce` (例如: 获得贷款) 和 `RapportEngine` (例如: 说服B级NPC) 检定的关键【钥匙】。
                     <!-- [v3 严格性 v3] 修正 -->
-                    “信用”的增减由“史官”AI (`&lt;Memory Update Prompt v2.3+&gt;`) 根据玩家在“历史”中的“守信”或“失信”行为（包括 `Kismet` 诈骗事件）来裁定和更新。
+                    【信用】的增减由【史官】AI (`&lt;Memory Update Prompt v2.3+&gt;`) 根据玩家在【历史】中的【守信】或【失信】行为（包括 `Kismet` 诈骗事件）来裁定和更新。
                 </Mechanic>
                 <!-- [v3 严格性 v3] 修正 -->
                 <Effect>
-                    [v9.4 核心] “信用”崩盘（例如: &lt; 100）将触发 &lt;PlayerMetabolismEngine&gt; 的“溢出伤害”（“信用破产压力” Debuff）。
+                    [v9.4 核心] 【信用】崩盘（例如: &lt; 100）将触发 &lt;PlayerMetabolismEngine&gt; 的【溢出伤害】（【信用破产压力】 Debuff）。
                 </Effect>
             </Resource>
         </System>
@@ -306,31 +336,30 @@
         <Rule>
             <!-- [v3 严格性 v3] 修正 -->
             此引擎与 &lt;WillpowerComposureEngine&gt; (意志对抗引擎) 联动。
-            双方使用 `Cognition` (思考) 攻击对方的“心防值”。
+            双方使用 `Cognition` (思考) 攻击对方的【心防值】。
         </Rule>
         
         <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
         <Rule version="9.4" importance="core">
             <!-- [v3 严格性 v3] 修正 -->
-            <Description>与*非“锚点”*NPC 的“高额交易”互动，被视为“高风险互动”，*必须*触发 &lt;KismetEngine&gt; 的“安全掷骰”（[v9.8] 天道法则 #11）。</Description>
+            <Description>与*非【锚点】*NPC 的【高额交易】互动，被视为【高风险互动】，*必须*触发 &lt;KismetEngine&gt; 的【安全掷骰】（[v9.8] 天道法则 #11）。</Description>
         </Rule>
     </HandOfCommerceModule>
     
     <!-- ... PhilosophicalConfrontationModule ... -->
     <PhilosophicalConfrontationModule title="思想引擎">
-        <CoreConcept>“思考”(Cognition) 与“决心”(Resolve) 的终极对抗。用于辩论、说服A级NPC、改变“精神场域”或推动宏观叙事。
+        <CoreConcept>【思考】(Cognition) 与【决心】(Resolve) 的终极对抗。用于辩论、说服A级NPC、改变【精神场域】或推动宏观叙事。
         [v9.7 更新] 结果输出为标准化的原子行为（如 Persuade (Cognition/Resolve), ResistMental 的 outcome）。</CoreConcept>
         <Rule>
-            这是最高难度的精神对抗。玩家必须使用 `Cognition` 攻击，同时使用 `Resolve` 抵抗对方的“思想钢印”。
+            这是最高难度的精神对抗。玩家必须使用 `Cognition` 攻击，同时使用 `Resolve` 抵抗对方的【思想钢印】。
         </Rule>
         <!-- [v3 严格性 v3] 修正 -->
         <Effect>
-            如果成功，玩家可能会永久改变一个 A 级“星辰”NPC 的“核心驱动力”，或者将一个“宏观事实”写入 &lt;ConsolidatedMemory/CoreMemory/WorldLedger_Core&gt;。
+            如果成功，玩家可能会永久改变一个 A 级【星辰】NPC 的【核心驱动力】，或者将一个【宏观事实】写入 &lt;ConsolidatedMemory/CoreMemory/WorldLedger_Core&gt;。
         </Effect>
         <Rule>
             <!-- [v3 严格性 v3] 修正 -->
-            长时间的“思想对抗”会*极度*消耗 `Clarity` (心力)，并*高风险*触发 &lt;PlayerMetabolismEngine&gt; 的“代谢疲劳” (Metabolic Fatigue)。
+            长时间的【思想对抗】会*极度*消耗 `Clarity` (心力)，并*高风险*触发 &lt;PlayerMetabolismEngine&gt; 的【代谢疲劳】 (Metabolic Fatigue)。
         </Rule>
     </PhilosophicalConfrontationModule>
 </Fragment>
-
