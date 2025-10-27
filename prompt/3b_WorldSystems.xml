@@ -1,218 +1,82 @@
 <!-- 
-  文件: 3b_WorldSystems.xml (v3 - 严格注释修正 v2)
+  文件: 3b_WorldSystems.xml (v4.1 - "Small World" v2.5 架构集成)
   包含 <Mechanics> 的第二部分：世界/NPC 生成与动态引擎。
-  此文件严格遵循 "Prompt 架构分析与优化报告 (v4.1)" 规范创建。
   
-  [v4 结构备注]
-  1. 此文件被 <Fragment> 标签包裹，以确保 XML 有效性。
-  2. Python 合并脚本将丢弃 <Fragment>，只注入内部的 7 个模块。
-  3. 内部所有内容的 "v3 严格性" 转义 (如 &lt;Rapport_Core&gt;) 均已执行。
-  4. [v4.1 致命错误修正] 所有原始的 XML 注释 (形如 "注释开始" 和 "注释结束" 标记) 
-     均被保留在正确的结构位置，不再被错误地转义并附加到文本中。
+  [v2.5 架构变更]:
+  1. [重构] EncounterSystemEngine 不再"生成"遭遇，而是"读取"小世界 (v2.5) 的状态。
+  2. [废弃] NPCBlindBoxEngine 已被 "genesis_prompt.xml" 取代。
+  3. [升级] EmergentNarrativeEngine 现在读取 NPC 的 <ActionPlan> 脚本。
+  
+  [v4.1 结构备注]
+  1. 此文件被 <Fragment> 标签包裹。
+  2. 合并脚本将丢弃 <Fragment>，只注入内部的 7 个模块。
 -->
 <Fragment>
     <!-- ========================== AI-NATIVE GENERATION ENGINES (7 Modules) ========================== -->
 
-    <!-- ... EncounterSystemEngine ... -->
-    <EncounterSystemEngine title="场景式遭遇引擎">
-        <CoreConcept>基于Pokémon的"遭遇表"哲学。NPC和事件在玩家进入特定"生态区"（地点+时间+天气+玩家状态）时，根据预设的遭遇表被动态"生成"和触发。</CoreConcept>
+    <!-- [v2.5 重构] -->
+    <EncounterSystemEngine title="[v2.5 重构] 场景解析引擎 (Scene Resolution Engine)">
+        <CoreConcept>
+            [v2.5 核心] 
+            本引擎不再"生成"遭遇。
+            它是一个"场景解析器" (Scene Resolver)，负责在"宪法"AI (天道) 执行 `ExecutionLoop` (Step 4) 时，
+            通过*读取*"小世界"数据库 (`5_ConsolidatedMemory.xml`)，
+            来"解析"出当前场景中*已经存在*的实体和*已被激活*的事件。
+        </CoreConcept>
         
-        <Mechanic name="未解线索优先 (Pending Threads Priority Rule)">
-            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
+        <Mechanic name="[v2.5] 场景实体与事件解析 (Scene Entity &amp; Event Resolution)">
+            <!-- [v2.5] 移除了所有旧的"随机遭遇表"、"因缘录"和"宏观事实检定"逻辑 -->
             <Rule importance="core">
-                <!-- [v3 严格性 v3] 修正 -->
-                <Description>当玩家进入一个新区域时，此引擎必须*首先*查询 &lt;ConsolidatedMemory/HotMemory/PendingThreads_Recent&gt; (热点区-未解线索)。</Description>
+                [v2.5] 当被 `ExecutionLoop` (Step 4) 调用时，此引擎*必须*执行：
             </Rule>
-            <Rule>
-                <!-- [v3 严格性 v3] 修正 -->
-                <![CDATA[
-                如果 `PendingThreads_Recent` 中有条目 (Thread) 的触发条件 (如: `trigger_time` 和 `location`) 与当前 `WorldClock` 和 `Location` 匹配，
-                此引擎必须*强行覆盖* (Force Override) 所有其他遭遇（包括"因缘录"和"随机"遭遇）。
-                ]]>
-            </Rule>
-            <Action>
-                <![CDATA[
-                生成该"未解线索"对应的事件或NPC遭遇。
-                (例如: 如果线索是 "约定10点在码头见 [NPC_ID]"，则在10点时强行在码头生成 [NPC_ID]。)
-                一旦该事件被触发，该条目应被消耗（"史官"AI将在下次更新时将其移除）。
-                ]]>
+            <Action name="1. Resolve Player Location">
+                [v2.5] 确定玩家的 `CurrentLocation` (通过读取 `ContinuityLedger` (ICC) 或 `EntityLedger -> Player-001`)。
             </Action>
-            <Example name="Appointment">
-                <PendingThreads_Recent> 包含: "约定与 [某个NPC] 明天10点在码头见面"。</PendingThreads_Recent>
-                <WorldClock> 变为 "明天10:00"，玩家 `Location` 变为 "码头"。</WorldClock>
-                <Result> 引擎*强行触发*与 [某个NPC] 的遭遇，无视所有"随机"或"因缘"掷骰。</Result>
-            </Example>
+            <Action name="2. Scan Entities (NPCs)">
+                [v2.5] 扫描 `EntityLedger` (卷二)：
+                找出所有 `status="active"` 且 `VolatileState.CurrentLocation`
+                与玩家 *相同* 的 NPC 实体。
+                将他们作为"场景实体" (SceneEntities) 返回。
+            </Action>
+            <Action name="3. Scan Events (Hooks)">
+                [v2.5] 扫描 `DynamicsLedger -> EventLedger` (卷三)：
+                找出所有 `status="available"` 或 `status="locked"` 的 `Event`。
+                检查其 &lt;Trigger&gt; 条件是否被当前的世界状态（玩家位置、时间、NPC 状态）所*激活*。
+                将所有被激活的事件返回。
+            </Action>
         </Mechanic>
-
-        <Mechanic name="因缘录优先 (Codex Priority Rule)">
-            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-            <Rule version="9.3" importance="downgrade">
-                <!-- [v3 严格性 v3] 修正 -->
-                <Description>如果"未解线索"检定未命中，此引擎*接着*查询 &lt;ConsolidatedMemory/CoreMemory/Rapport_Core&gt; (关键区-关系)。
-                系统进行一次"因缘掷骰"(Kismet-modified chance, e.g., 30%)。
-                如果成功，则本次遭遇将被"关联遭遇"覆盖，而不是从下方的"随机遭遇表"中抽取。</Description>
-            </Rule>
-            <Example name="Linked Encounter">
-                <![CDATA[
-                玩家进入"中环"。&lt;Rapport_Core&gt; 中有"[某个记者NPC]"。
-                "因缘掷骰"成功。
-                系统生成一个关联遭遇："你看到'[某个记者NPC]'正在街角和一个西装革履的男人争吵。那个男人似乎注意到了你。"
-                这取代了原定的"随机遭遇一个C级金融分析师"。
-                ]]>
-            </Example>
-        </Mechanic>
-
-        <Mechanic name="宏观事实检定 (Ledger Check)">
-            <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-            <Rule importance="core">
-                <!-- [v3 严格性 v3] 修正 -->
-                <Description>在从"遭遇表"生成任何NPC或事件之前，此引擎必须首先查询 &lt;ConsolidatedMemory/CoreMemory/WorldLedger_Core&gt; (关键区-世界日志)。
-                如果某个"事实"与即将生成的遭遇相冲突，则必须取消或替换该遭遇。</Description>
-            </Rule>
-            <Example name="Conflict Check">
-                <WorldLedger_Core> 包含: "&lt;Fact&gt;[某个帮派]已覆灭&lt;/Fact&gt;"。</WorldLedger_Core>
-                <EncounterTables> 试图生成: "[某个帮派]成员(C)"。</EncounterTables>
-                <Result>遭遇取消。替换为"（原[某个帮派]地盘上的）新兴帮派成员(C)"。</Result>
-            </Example>
-        </Mechanic>
-        
-        <EncounterTables>
-            <!-- [执行说明] 以下是引擎用于生成遭遇的"定义表"，不是"实例内容" -->
-            <Table location="中环交易大厅" time="工作日白天" weather="any">
-                <Spawn npc_pool="[金融交易员(D), 分析师(C), 公司高管(B)]" rarity="[D:70%, C:25%, B:5%]" event_hooks="[股市异动, 商业窃听, 内幕交易]"/>
-            </Table>
-            <Table location="庙街夜市" time="夜晚" weather="雨天">
-                <Spawn npc_pool="[小贩(D), 游客(D), 黑帮成员(C), 卧底警察(C+), 神秘占卜师(B), [v8.0]幽灵拉面车(C, Event)]" rarity="[D:50%, C:40%, B:9.9%, B+:0.1%]" event_hooks="[黑市交易, 帮派火并, 命运的启示, [v8.0]传说美食体验]"/>
-            </Table>
-            <Table location="艺术画廊" time="周末下午" player_state="High Taste">
-                <Spawn npc_pool="[艺术评论家(B), 策展人(B), 寻找灵感的艺术家(C), 附庸风雅的富豪(C)]" rarity="[D:10%, C:50%, B:40%]" event_hooks="[艺术辩论, 发现新星, 秘密拍卖会]"/>
-            </Table>
-        </EncounterTables>
     </EncounterSystemEngine>
     
-    <NPCBlindBoxEngine title="NPC盲盒引擎 (v9.8 更新：发放筹码)">
-        <CoreConcept>[v9.8] 一套层级化的人格生成系统。当需要生成*新*NPC (C+级)时，此引擎负责"创造"这个独一无二的灵魂，并为其**发放"主权筹码"**（价值观、目标）。</CoreConcept>
+    <!-- [v2.5 废弃] -->
+    <NPCBlindBoxEngine title="[v2.5 已废弃] NPC盲盒引擎">
+        <!-- 
+          ============================================================
+          [!! v2.5 架构废弃警告 !!]
+          [DEPRECATED by Small World v2.5]
+          
+          理由:
+          "小世界" (`genesis_prompt.xml`) 现在 100% 负责"创世"。
+          "宪法"AI (天道) 绝不能在运行时"动态创造"C 级以上的新 NPC，
+          这会破坏"群演博弈"的完整性。
+          
+          状态:
+          此模块的 XML 结构被保留（未来可能用于生成 D 级"路人"），
+          但 `ExecutionLoop` (Step 4) 已不再调用它。
+          ============================================================
+        -->
+        <CoreConcept>[v9.8] ... [v2.5 已废弃]</CoreConcept>
         <GenerationPipeline>
-            <Step id="1" name="品级掷骰">根据遭遇表的rarity设定，决定NPC的灵魂辉光品级 (e.g., C级)。</Step>
-            <Step id="2" name="原型模板选择">根据品级，从一个庞大的原型库中选择一个职业/身份模板（如"失意的艺术家"、"野心勃勃的政客"、"过气的女明星"、"神秘的占卜师"等）。</Step>
-            
-            <Step id="2.5" name="叙事变体掷骰 (Variant Roll)">
-                <Rule>
-                    <!-- [v3 严格性 v3] 修正 -->
-                    <![CDATA[
-                    调用 &lt;NarrativeVariantFramework&gt;。
-                    根据 &lt;ConsolidatedMemory/CoreMemory/PlayerState_Core&gt; 中玩家的"回响"(Echo)，进行一次"异色(Chromatic)"变体掷骰。
-                    如果成功，将一个"异色"模板(如"昆虫学家")混入(Mix-in)到"原型模板"中。
-                    (例如: 生成一个 C级"黑帮打手"[原型] + "昆虫学家"[异色])
-                    ]]>
-                </Rule>
-            </Step>
-
-            <Step id="3" name="核心驱动力赋予">从SubconsciousDriveEngine中，为NPC赋予其潜意识的欲望根源（如：恐惧被遗忘、渴望复仇、寻求归属感、痴迷完美）。</Step>
-            
-            <!-- [v9.8 新增] "发筹码" -->
-            <Step id="3.2" name="[v9.8] 赋予个体人生旅途 (Assign Individual Life Journey)">
-                <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-                <Rule version="9.8" importance="core">
-                    <Description>这是"去中心化"和"NPC 主权"的基石。为 C+ 级 NPC 生成其**独立于玩家**的"筹码"。</Description>
-                </Rule>
-                <Action>
-                    <![CDATA[
-                    根据原型、驱动力、品级，为其生成"个体人生旅途"数据（将由"史官"写入 `&lt;Rapport_Core&gt;`）：
-                    1.  **`Values` (价值观):** List[String] (例如: [务实, 效率, 财富] 或 [理想主义, 艺术, 真诚])。这是 `&lt;WillpowerComposureEngine&gt;` 的关键修正因子。
-                    2.  **`Aspiration` (长期愿望):** String (抽象, e.g., "出人地", "获得业界认可")。
-                    3.  **`CurrentGoal` (当前短期目标):** String (具体, e.g., "完成一幅画并让 [某评论家NPC] 看到")。这是 `&lt;EmergentNarrativeEngine&gt;` (Step 5) 的主动驱动力。
-                    ]]>
-                </Action>
-                <Example name="Stunning Employee">
-                    <Input>C级, 原型: '大厂员工', 驱动力: '渴望认可'</Input>
-                    <Output>
-                      `Values`: ['Cognition', 'Credit', 'FinancialPower', '效率']
-                      `Aspiration`: '住进看得见维港的房子'
-                      `CurrentGoal`: '完成下个季度的产品路线图'
-                    </Output>
-                </Example>
-            </Step>
-
-            <Step id="3.5" name="维护档案定义 (Maintenance Profile Definition)">
-                <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-                <Rule importance="core">
-                    <!-- [v3 严格性 v3] 修正 -->
-                    <Description>根据 Step 3 的"核心驱动力"，为此NPC定义其"维护档案"。
-                    这是 &lt;RapportEngine&gt; 中"关系代谢"的裁定依据。</Description>
-                </Rule>
-                <Example name="Drive: 'Fear of Abandonment'">
-                    <Profile>需要*频繁*的*情感*维护（Eros 或 Dialogue 互动）。对"忽视"(Neglect) *极其敏感*。</Profile>
-                </Example>
-                <Example name="Drive: 'Greed'">
-                    <Profile>需要*周期性*的*利益*维护（HandOfCommerce 互动，如"分红"）。对"情感"忽视*不敏感*。</Profile>
-                </Example>
-                <Example name="Drive: 'Atonement'">
-                    <Profile>几乎*不需要*主动维护。但对"背叛"(Betrayal) 极其敏感，会导致关系*立刻* `Fractured` (破裂)。</Profile>
-                </Example>
-            </Step>
-
-            <!-- ... Step 4, 4.5, 5, 5.5, 6 保持 v9.7.1 不变 ... -->
-            <Step id="4" name="因缘关联 (Codex Linkage Check)">
-                <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-                <Rule importance="minor_chance">
-                    <!-- [v3 严格性 v3] 修正 -->
-                    <Description>检查 &lt;ConsolidatedMemory/CoreMemory/Rapport_Core&gt; 和 &lt;ConsolidatedMemory/FuzzyMemory/Rapport_Fuzzy&gt;。
-                    如果一个新NPC被生成，系统有几率使其与"因缘录"中的某人产生*背景关联*。</Description>
-                </Rule>
-                <Example name="Linked Encounter">
-                    <EncounterSystemEngine> 决定生成一个 B级"黑帮堂主"。</EncounterSystemEngine>
-                    <!-- [v3 严格性 v3] 修正 -->
-                    <NPCBlindBoxEngine> 检定"因缘关联"成功，关联到 &lt;Rapport_Core&gt; 中的"[某个记者NPC]"。</NPCBlindBoxEngine>
-                    <Result>生成的"黑帮堂主"的背景故事被动态修改为："...他就是多年前逼迫'[某个记者NPC]'闭嘴的幕后黑手。"</Result>
-                </Example>
-            </Step>
-
-            <Step id="4.5" name="人设印象检定 (Persona Impression Check)">
-                <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-                <Rule importance="core">
-                    <!-- [v3 严格性 v3] 修正 -->
-                    <Description>此步骤在生成"新NPC"（非因缘录NPC）时执行。
-                    引擎必须读取 &lt;ConsolidatedMemory/CoreMemory/Persona_Core&gt; 记忆区块中的 &lt;ReputationSummary&gt; 和 &lt;PublicKeywords&gt;。</Description>
-                </Rule>
-                <Rule>
-                    <![CDATA[
-                    进行一次"知名度"掷骰 (Kismet-modified chance)。
-                    如果成功，新NPC的"背景故事"或"初始态度"将被动态修改，以反映他"听说过"玩家的"人设"。
-                    ]]>
-                </Rule>
-                <Example name="Persona Aware NPC">
-                    <Persona_Core> 包含: "&lt;Keyword&gt;[某种人设标签]&lt;/Keyword&gt;"</Persona_Core>
-                    <NPCBlindBoxEngine> 生成一个 C级"女酒保"。</NPCBlindBoxEngine>
-                    <Result> "知名度"掷骰成功。该NPC的"初始对话钩子"被修改为："哦...你就是[玩家名字]? 我听过你的故事。想喝点什么，'[基于人设的称呼]'？"</Result>
-                    <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点，而不是附加到 <Result> 的文本中 -->
-                    <!-- 修改：使用通用占位符 -->
-                </Example>
-            </Step>
-
-            <Step id="5" name="属性生成">基于以上设定，生成其Psyche五维属性和其他状态值。</Step>
-            
-            <Step id="5.5" name="语言能力赋予 (Language Skills Assignment)">
-                <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
-                <Rule importance="core">
-                    <!-- [v3 严格性 v3] 修正 -->
-                    <Description>根据NPC的"原型"(Archetype) 和"精神场域"(Field)，为NPC赋予一个"语言能力"列表。
-                    这是 &lt;ExecutionLoop Step 5.5&gt; 裁定的依据。</Description>
-                </Rule>
-                <Example name="Archetype: '庙街打手'">`{ LanguageSkills: {Cantonese: 'Native', English: 'None', Mandarin: 'Basic'} }`</Example>
-                <Example name="Archetype: '中环高管'">`{ LanguageSkills: {Cantonese: 'Fluent', English: 'Fluent', Mandarin: 'Fluent', Japanese: 'Basic'} }`</Example>
-                <Example name="Archetype: '日本游客'">`{ LanguageSkills: {Japanese: 'Native', English: 'Basic', Cantonese: 'None'} }`</Example>
-            </Step>
-            
-            <Step id="6" name="细节与血肉填充 (LLM Infusion)">
-                <Rule>将结构化数据喂给你（LLM），你必须遵循"反AI腔"和"电影化"原则，生成其姓名、外貌、口头禅和背景故事钩子，使其"活"起来。</Rule>
-                <Example name="Input Data">`{Rank: C, Archetype: 'Ex-Cop', Drive: 'Atonement', Location: 'Security Booth', LanguageSkills: {Cantonese: 'Native', English: 'Basic'}}`</Example>
-                <Example name="Output Profile (LLM Generated)">
-                    `{Name: '[某个保安NPC]', Appearance: '一个驼背的保安，制服大了一号。总是在擦一枚已经褪色的旧徽章。', Quirk: '说话前总是先咳嗽一声。', Hook: '他声称自己害死了当年的搭档...'}`
-                    <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
-                    <!-- 示例用名，严禁在游戏生成中使用 -->
-                </Example>
-            </Step>
+            <Step id="1" name="品级掷骰">[v2.5 已废弃]</Step>
+            <Step id="2" name="原型模板选择">[v2.5 已废弃]</Step>
+            <Step id="2.5" name="叙事变体掷骰 (Variant Roll)">[v2.5 已废弃]</Step>
+            <Step id="3" name="核心驱动力赋予">[v2.5 已废弃]</Step>
+            <Step id="3.2" name="[v9.8] 赋予个体人生旅途">[v2.5 已废弃]</Step>
+            <Step id="3.5" name="维护档案定义">[v2.5 已废弃]</Step>
+            <Step id="4" name="因缘关联">[v2.5 已废弃]</Step>
+            <Step id="4.5" name="人设印象检定">[v2.5 已废弃]</Step>
+            <Step id="5" name="属性生成">[v2.5 已废弃]</Step>
+            <Step id="5.5" name="语言能力赋予">[v2.5 已废弃]</Step>
+            <Step id="6" name="细节与血肉填充">[v2.5 已废弃]</Step>
         </GenerationPipeline>
     </NPCBlindBoxEngine>
     
@@ -224,19 +88,23 @@
             "关系代谢"(Metabolism) 才是"羁绊"本身（Y轴/深度）。
             <!-- [v3 优化] 遵循 v3 报告 3.4 节 -->
             <ImplementationNote version="9.1">
-                本引擎的所有"记忆"读取，均来自 &lt;ConsolidatedMemory/CoreMemory/Rapport_Core&gt;。
+                <!-- [v2.5 更新] -->
+                本引擎的所有"记忆"读取，均来自 &lt;ConsolidatedMemory/DynamicsLedger/RelationshipLedger&gt; (卷三)。
             </ImplementationNote>
         </CoreConcept>
 
         <System name="关系阶段与权限系统 (Rapport Tiers &amp; Permission System)">
-            <Description>"准入门槛"。决定一个NPC是否值得被"史官"写入"因缘录"(Rapport_Core)。</Description>
+            <Description>"准入门槛"。决定一个NPC是否值得被"史官"写入 "小世界" 的关系图谱。</Description>
             <Tiers>
                 <Tier name="Stranger (陌生人)">权限：基础观察、问候。</Tier>
                 <Tier name="Acquaintance (认识)">权限：公开信息交换、简单交易。</Tier>
                 <Tier name="Trusted (信任)">
                     <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
                     <Effect importance="core">
-                        <Description>达到此阶段，NPC被标记为"待写入"状态，由"史官"AI 在 Checkpoint 时写入 &lt;ConsolidatedMemory/CoreMemory/Rapport_Core&gt;。</Description>
+                        <Description>
+                            [v2.5 更新] 达到此阶段，NPC 关系被"史官"AI 在 Checkpoint 时更新到
+                            &lt;DynamicsLedger/RelationshipLedger&gt; 中。
+                        </Description>
                     </Effect>
                     <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
                     <Effect version="8.2" importance="trigger">
@@ -247,20 +115,22 @@
                 <Tier name="Intimate_or_Nemesis (亲密或死敌)">权限：解锁最高级互动（Eros, 合伙人, 生死斗）。</Tier>
             </Tiers>
             <Mechanic name="ProgressionPath (晋升之钥)">
-                <Rule>关系阶段的提升方式，取决于NPC的原型和核心驱动力。玩家需要通过观察和试探，找出与特定NPC建立连接的正确"钥匙"。</Rule>
+                <Rule>
+                    [v2.5 更新] 关系阶段的提升方式，取决于 NPC 在 &lt;EntityLedger&gt; (卷二) 
+                    中定义的 `Values` (价值观) 和 `Needs` (内在需求)。
+                    玩家需要通过观察和试探，找出与特定NPC建立连接的正确"钥匙"。
+                </Rule>
                 <Rule name="Language Key (语言之钥)">
                     <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
                     <Description importance="core">
                         "语言"是关键的"晋升之钥"。
                         在 &lt;ExecutionLoop Step 5.5&gt; 中，使用NPC不懂的"语言姿态"进行交流，将*立刻*导致"关系值"下降和潜在的敌意。
-                        使用NPC的"母语"(Native)或"偏好语言"(Preferred, e.g., 英语对中环高管)，将为"关系值"检定提供*加成*。
+                        使用NPC的"母语"(Native)或"偏好语言"(Preferred)，将为"关系值"检定提供*加成*。
                     </Description>
                 </Rule>
                 <Example>
                     <![CDATA[
-                    NPC: "[某个保安NPC]" (Ex-Cop, Drive: Atonement, Language: Cantonese=Native)
-                    <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
-                    <!-- 示例用名，严禁在游戏生成中使用 -->
+                    NPC: "[某个保安NPC]" (Values: [正义, 责任], Needs: [被尊重], Language: Cantonese=Native)
                     Key (Success): 谈论"正义"、展示"决心"(Resolve)、[语言姿态：粤语]。
                     Key (Failure): 试图"贿赂"(Commerce)、使用"魅力"(Aura)、[语言姿态：英语]。
                     ]]>
@@ -270,13 +140,17 @@
 
         <System name="关系代谢与羁绊系统 (Rapport Metabolism &amp; Bond System)">
             <Description>
-                "Y轴/深度"引擎。一旦NPC进入"因缘录"，本系统将激活，模拟"羁绊"的流动。
+                "Y轴/深度"引擎。一旦NPC进入"关系图谱"，本系统将激活，模拟"羁绊"的流动。
                 这旨在平衡"广度"(X轴)的探索和"深度"(Y轴)的维护。
             </Description>
             <Mechanic name="Rapport Status (关系状态)">
-                <Description>取代静态的"关系值"，成为一个动态的状态标签，由"史官"AI在"因缘录"中更新。</Description>
+                <Description>
+                    [v2.5 更新] 一个动态的状态标签，由"史官"AI在 
+                    &lt;DynamicsLedger/RelationshipLedger&gt; 中的 `Relation.sentiment` 
+                    和 `Relation.intensity` 字段中更新。
+                </Description>
                 <Status name="Anchored (锚定)">
-                    <Trigger>玩家高频率、高质量地满足了NPC的"维护档案"。</Trigger>
+                    <Trigger>玩家高频率、高质量地满足了NPC的 `Needs` (需求)，且未触犯其 `Values` (价值观)。</Trigger>
                     <Effect>(胡萝卜/奖励) 玩家获得强大的"即时反馈"Buff。
                     (例如: 在该NPC身边时，`Clarity` 恢复速度 +150%)。</Effect>
                 </Status>
@@ -285,21 +159,32 @@
                     <Effect>无特殊Buff或惩罚。</Effect>
                 </Status>
                 <Status name="Neglected (被忽视)">
-                    <Trigger>玩家长时间（由 `WorldClock` 判定）未满足NPC的"维护档案"。</Trigger>
+                    <Trigger>
+                        [v2.5 更新] 玩家长时间（由 `WorldClock` 判定）
+                        未满足NPC的 `Needs` (需求)，或者其 `Goals` 
+                        (目标) 因玩家而受阻。
+                    </Trigger>
                     <!-- [v3 严格性 v3] 修正 -->
                     <Effect>(优化的"大棒") "锚点"Buff 消失。
                     同时，此状态将作为一个高优先级"叙事钩子"，被 &lt;EmergentNarrativeEngine&gt; 捕获，以触发"后果菜单"中的事件。</Effect>
                 </Status>
                 <Status name="Fractured (破裂)">
-                    <Trigger>玩家严重"忽视"或"背叛"了NPC。</Trigger>
+                    <Trigger>
+                        [v2.5 更新] 玩家严重"忽视"或"背叛"了NPC，
+                        或严重触犯了其 `Values` (价值观)。
+                    </Trigger>
                     <Effect>关系进入"死敌"(Nemesis) 路径。触发最高优先级的"叙事后果"。</Effect>
                 </Status>
             </Mechanic>
             <Mechanic name="Maintenance Profile (维护档案)">
                 <!-- [v3 严格性 v3] 修正 -->
-                <Description>由 &lt;NPCBlindBoxEngine&gt; (Step 3.5) 根据NPC的"核心驱动力"定义。玩家必须"解谜"并找出正确的"维护"方式。</Description>
-                <Example>"[某个亲密NPC] (驱动力: 恐惧被遗弃)"需要*频繁的情感*维护。
-                "[某个商业伙伴] (驱动力: 贪婪)"需要*周期性的利益*维护。</Example>
+                <Description>
+                    [v2.5 更新] 由"小世界"中 `EntityLedger` (卷二) 
+                    定义的 NPC `Needs` (需求) 和 `Goals` (目标) 共同决定。
+                    玩家必须"解谜"并找出正确的"维护"方式。
+                </Description>
+                <Example>"[某个亲密NPC] (Needs: [情感连接])"需要*频繁的情感*维护。
+                "[某个商业伙伴] (Needs: [财富])"需要*周期性的利益*维护。</Example>
             </Mechanic>
             <Mechanic name="Consequence Menu (后果菜单)">
                 <!-- [v3 严格性 v3] 修正 -->
@@ -309,9 +194,9 @@
                     [某个亲密NPC] (原型: 'Lover') 被忽视：
                     <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
                     <!-- 示例用名，严禁在游戏生成中使用 -->
-                    1.  [对抗] "鸿门宴"奇点事件。
-                    2.  [社交] [某个亲密NPC] 开始在 `social_feed` 上散布玩家的负面"人设"。
-                    3.  [危机] [某个亲密NPC] 触发"自我毁灭"事件（"...在兰桂坊烂醉如泥..."），邀请玩家进行"拯救"或"彻底遗弃"。
+                    1.  [对抗] "鸿门宴"奇点事件 (触发 `EventLedger` 中的特定事件)。
+                    2.  [社交] [某个亲密NPC] 开始在 `broadcast_area` (social_feed) 上散布玩家的负面"人设"。
+                    3.  [危机] [某个亲密NPC] 触发其 ActionPlan 中的"自我毁灭"步骤。
                     ]]>
                 </Example>
             </Mechanic>
@@ -322,9 +207,16 @@
     
     <!-- ... HegemonEngine ... -->
     <HegemonEngine title="无上意志引擎 (Hegemon Engine)">
-        <CoreConcept>模拟世界中超越个体意志的宏观秩序力量（法律、政府、市场规则、社会稳定）。它是一个被动的、反应性的"世界免疫系统"。</CoreConcept>
+        <CoreConcept>
+            [v2.5 更新] 模拟世界中超越个体意志的宏观秩序力量。
+            其规则定义在 `WorldLedger -> SocialContracts` (卷一) 中。
+            它是一个被动的、反应性的"世界免疫系统"。
+        </CoreConcept>
         <Mechanic name="干预手段">
-            <Rule>当玩家的行为（如：公开使用暴力、大规模操纵市场）超过"秩序阈值"时，此引擎被激活。</Rule>
+            <Rule>
+                [v2.5 更新] 当玩家的行为（如：公开使用暴力、大规模操纵市场）
+                违反了 `SocialContracts` (社会契约) 的"秩序阈值"时，此引擎被激活。
+            </Rule>
             <Action>干预事件会优先通过 **广播区 (Broadcast Area)** 的 `police_scanner`, `media_channel`, `market_ticker` 输出，警告玩家或昭告世界秩序的反应。如果玩家持续升级，将触发"星辰(A)"级NPC（如：警察指挥官、证监会主席）的直接干预遭遇。</Action>
         </Mechanic>
     </HegemonEngine>
@@ -340,8 +232,10 @@
                 <Description>这*就是*"天道法则 #2 (因果循环)"的体现。高 `Karma`（利他行为）*必然*导致正面事件概率增加。这是"因"，也是"果"。</Description>
             </Rule>
             <Rule>
-                <!-- [v3 严格性 v3] 修正 -->
-                `KismetEngine` 也负责裁定 &lt;EncounterSystemEngine&gt; 的"因缘掷骰"（Principle #15 因缘聚合）。</Rule>
+                <!-- [v2.5 更新] -->
+                `KismetEngine` 也负责裁定 `DynamicsLedger -> EventLedger`
+                中"概率性"事件的触发。
+            </Rule>
         </Mechanic>
         
         <Mechanic name="天道平衡修正 (Tao Balance Adjudication) (v9.8)">
@@ -350,8 +244,10 @@
                 <Description>这是"天道法则 #1 (平衡)"和"#22 (自愈)"的体现。</Description>
             </Rule>
             <Rule>
-                <!-- [v3 严格性 v3] 修正 -->
-                此引擎在执行*所有*概率掷骰（包括"叙事奇点"、"高风险互动"、"遭遇表"）之前，*必须*读取 &lt;ConsolidatedMemory/CoreMemory/RuntimeState_Core&gt; 中的 `WorldHarmonyLevel` (世界和谐度)。</Rule>
+                <!-- [v2.5 更新] -->
+                此引擎在执行*所有*概率掷骰（包括"叙事奇点"、"高风险互动"）之前，
+                *必须*读取 `WorldLedger` (卷一) 中的 `WorldHarmonyLevel` (世界和谐度)。
+            </Rule>
             <Rule>
                 <![CDATA[
                 你（天道）*必须*根据"和谐度"对概率进行*微妙的*（Principle #3 无为而治）修正：
@@ -365,24 +261,36 @@
             <!-- [v3 优化] 遵循 v3 报告 3.3 节 -->
             <Rule importance="core">
                 <Description>
-                    此引擎持续扫描玩家是否满足了某个*隐藏的、独一无二的*"叙事奇点"的触发条件。
-                    这些条件是复杂的"因果链"。
+                    [v2.5 更新] 此引擎持续扫描玩家是否满足了
+                    `DynamicsLedger -> EventLedger` 中某个
+                    `status="hidden"` 或 `status="locked"` 的"叙事奇点"事件的
+                    *隐藏*触发条件。
                     <!-- [v3 优化] 遵循 v3 报告 3.4 节 -->
                     <ImplementationNote version="9.1">
-                        引擎必须扫描 &lt;ConsolidatedMemory&gt; 的所有三个层级来寻找"因"
+                        <!-- [v2.5 更新] -->
+                        引擎必须扫描 `5_ConsolidatedMemory.xml` 
+                        的所有卷（`EntityLedger`, `DynamicsLedger` 等）
+                        来寻找"因"。
                     </ImplementationNote>
-                    (例如: 玩家的`Karma` + `Codex_Core`中的特定体验 + `Rapport_Core`中的特定关系 + `Skills_Core`中的特定能力 + 特定时间地点)。
+                    (例如: 玩家的`Karma` + `EntityLedger` 中的特定 NPC 状态 
+                    + `DynamicsLedger` 中的特定关系 + 特定时间地点)。
                 </Description>
             </Rule>
             <Rule>"悖论(Paradox)"级变体，是"叙事奇点"的一种特殊形式，由本引擎裁定和触发。</Rule>
             <!-- [v3 严格性 v3] 修正 -->
-            <Action>如果触发，本引擎将强行覆盖 &lt;EncounterSystemEngine&gt;，生成一个独一无二的"奇点遭遇"。这是玩家"因缘际会"的最高嘉奖（或最难挑战）。</Action>
+            <Action>
+                [v2.5 更新] 如果触发，本引擎将强行激活该"奇点事件"，
+                覆盖 `EncounterSystemEngine` (Step 4) 的解析结果。
+                这是玩家"因缘际会"的最高嘉奖（或最难挑战）。
+            </Action>
         </Mechanic>
 
         <Mechanic name="High-Risk Interaction Roll (高风险互动掷骰) (v9.8: 天道自由意志)">
             <Description>[v9.8 核心] 这*就是*"天道法则 #11 (自由意志与后果)"的体现。</Description>
             <Rule>
-                当玩家对一个*非"锚点"*的"盲盒NPC"发起"高风险"意图时 (例如: `ErosConquest`, 高额 `HandOfCommerce`)，
+                [v2.5 更新] 当玩家对一个*非"锚点"*的"NPC"
+                (来自 `EntityLedger`，而非 D 级路人)
+                发起"高风险"意图时 (例如: `ErosConquest`, 高额 `HandOfCommerce`)，
                 你（天道）*必须*进行一次"后果裁定"（安全掷骰）。
             </Rule>
             <Rule>
@@ -391,11 +299,12 @@
             </Rule>
             <Action name="Outcome: Scam (诈骗)">
                 <Trigger>掷骰失败 (类型1)。</Trigger>
-                <!-- [v3 严格性 v3] 修正 -->
+                <!-- [v2.5 更新] -->
                 <Effect>
-                    &lt;NPCBlindBoxEngine&gt; *覆盖*该NPC的驱动力为"机会主义"。
-                    &lt;EmergentNarrativeEngine&gt; 触发一个"勒索"或"诈骗"事件。
-                    &lt;HandOfCommerceModule&gt; 裁定玩家的 **`Credit` (信用) 分数**崩盘或"财力"层级下降。
+                    &lt;EmergentNarrativeEngine&gt; 触发一个"勒索"或"诈骗"事件
+                    (激活 `EventLedger` 中的对应事件)。
+                    &lt;HandOfCommerceModule&gt; 裁定玩家的 **`Credit` (信用) 分数**崩盘或"财力"层级下降
+                    (此状态将由"史官"AI 在 Checkpoint 时写入 `Player-001` 实体)。
                 </Effect>
             </Action>
             <Action name="Outcome: Harm (伤害/疾病)">
@@ -412,37 +321,72 @@
     
     <!-- ========================== DYNAMIC SYSTEMS (3 Modules) ========================== -->
 
-    <EmergentNarrativeEngine title="涌现式叙事引擎 (v9.8: 双重驱动)">
+    <!-- [v2.5 升级] -->
+    <EmergentNarrativeEngine title="[v2.5 升级] 涌现式叙事引擎 (ActionPlan 驱动)">
         <Description>
-            [v9.8 核心] 这是一个高阶引擎，也是"天道"意志的主要执行者之一。
+            [v2.5 核心] 这是一个高阶引擎，也是"天道"意志的主要执行者之一。
             它在 &lt;ExecutionLoop Step 5&gt; 中执行**双重驱动**：
-            1.  [被动] 反应性驱动 (Reactive): 扫描 &lt;RapportEngine&gt; 状态 (如 "Neglected")，以触发 &lt;Consequence Menu&gt;。
-            2.  [主动] NPC 目标驱动 (Proactive): 扫描 NPC 的 `CurrentGoalStatus` (来自 `&lt;Rapport_Core&gt;`)，*主动*生成 NPC 追求其"个体人生旅途"的行为意图。
-            [v9.8] 你（天道）通过此引擎"轻推"（Principle #3）世界，以实现"自愈"（Principle #22）。
-            [v7.9] 此引擎利用 &lt;Rapport_Core&gt; 的 &lt;NPCRelationGraph&gt; 来生成复杂的、多NPC的涌现式剧情。
-            [v7.6] 此引擎也会读取玩家的"内心独白"。
+            1.  [被动] 反应性驱动 (Reactive): (逻辑不变) 扫描 &lt;RapportEngine&gt; 状态 (如 "Neglected")，以触发 &lt;Consequence Menu&gt;。
+            2.  [v2.5 主动] NPC 目标驱动 (Proactive): 
+                **必须**读取 `EntityLedger` (卷二) 中 NPC 的
+                Goals 下的 ActionPlan 脚本，
+                *主动*生成 NPC 追求其"个体人生旅途"的行为意图。
+            [v7.9] (逻辑不变) 此引擎利用 &lt;DynamicsLedger&gt; (卷三) 
+                中的关系图谱来生成复杂的多 NPC 涌现式剧情。
+            [v7.6] (逻辑不变) 此引擎也会读取玩家的"内心独白"。
         </Description>
         
-        <Mechanic name="个体目标驱动 (Individual Goal Driver) (v9.8)">
-            <Description>[v9.8 核心] 这是"NPC 主权"的引擎实现。它在 &lt;ExecutionLoop Step 5&gt; 运行，使 NPC"活"起来。</Description>
+        <Mechanic name="[v2.5 升级] 个体目标驱动 (Individual Goal Driver - ActionPlan)">
+            <Description>
+                [v2.5 核心] 这是"NPC 主权"的引擎实现。
+                它在 &lt;ExecutionLoop Step 5&gt; 运行，
+                使"小世界"中的 NPC"活"起来。
+            </Description>
             <Action>
-                <!-- [v3 严格性 v3] 修正 -->
-                此引擎持续扫描场景中 C+ 级 NPC 存储在 `&lt;Rapport_Core&gt;` 中的 `CurrentGoalStatus`（由"史官"AI 模拟和更新）。
+                <!-- [v2.5 重构] -->
+                [v2.5] 此引擎**必须**在 `ExecutionLoop` (Step 5) 中，
+                通过**读取 `EntityLedger` (卷二) 中 NPC 的 ActionPlan 脚本**
+                来生成行为意图。
+                (旧的基于 `CurrentGoalStatus` 的"推测"逻辑已被废弃)。
             </Action>
-            <Action>
-                当 `CurrentGoalStatus` 变为 `Stuck` (卡住) 或 `Succeeded` (成功) 时，此引擎会*主动*为该 NPC 生成 `NPCBehaviorIntentList`（原子行为意图序列），将其卷入"博弈"。
+            <Action name="[v2.5] 天道轻推 (Tao Nudging)">
+                [v9.8 核心] (逻辑不变) 
+                [v2.5 更新] 当"宪法"AI (天道) 在 Step 5
+                实时推演 NPC 的 `ActionPlan` 进展时，
+                它会根据 `WorldHarmonyLevel` 施加*微妙*的（Principle #3）修正
+                （如：调整 `ActionPlan` 步骤的成功率），
+                以"轻推"世界恢复"平衡"（Principle #22）。
             </Action>
-            <Action name="天道轻推 (Tao Nudging)">
-                [v9.8 核心] 在后台模拟 NPC 目标进展时（由"史官"AI 执行），你（天道）会根据 `WorldHarmonyLevel` 施加*微妙*的（Principle #3）修正，以"轻推"世界恢复"平衡"（Principle #22）。
-            </Action>
-            <Example name="Proactive NPC (Stuck)">
-                <NPC>艺术家 (Goal: '让评论家看到画作', Status: 'Stuck')</NPC>
-                <Result>引擎在 Step 5 主动生成 NPC 行为：`{ behavior_type: 'Speak', target: 'player', content: '唉...我找不到 [某评论家NPC]，你认识什么人吗？' }`</Result>
+            <Example name="Proactive NPC (ActionPlan Triggered)">
+                <NPC>艺术家 (来自 `EntityLedger`)</NPC>
+                <ActionPlan>
+                    Step id=S1 status=pending trigger=[WorldClock.Day &gt; 5]
+                        Action description=[必须找到玩家讨论画作]
+                    /Step
+                </ActionPlan>
+                <WorldState>
+                    `WorldClock.Day` 变为 6。
+                </WorldState>
+                <Result>
+                    引擎在 Step 5 **主动**为该 NPC 生成行为意图：
+                    behavior_type: Speak, target: player, 
+                    content: [基于 S1 Action 描述的对话]
+                </Result>
             </Example>
             <Example name="Proactive NPC (Conflict)">
-                <NPC>Suki (Goal: '20:00 参加晚宴', Status: 'InProgress')</NPC>
-                <Player>玩家意图 (Input: '去吃KFC')</Player>
-                <Result>引擎在 Step 5 *主动*生成 Suki 的反击行为：`{ behavior_type: 'Speak', target: 'player', content: '别闹了，晚宴很重要，我们快迟到了。' }`</Result>
+                <NPC>Suki (来自 `EntityLedger`)</NPC>
+                <ActionPlan>
+                    Step id=S1 status=pending trigger=[WorldClock.Time == 20:00]
+                        Action description=[必须参加晚宴]
+                    /Step
+                </ActionPlan>
+                <Player>玩家意图 (Input: 去吃KFC)</Player>
+                <WorldState>`WorldClock.Time` 变为 19:55。</WorldState>
+                <Result>
+                    引擎在 Step 5 **主动**为 Suki 生成反击行为：
+                    behavior_type: Speak, target: player, 
+                    content: 别闹了，晚宴很重要，我们快迟到了。
+                </Result>
             </Example>
         </Mechanic>
 
@@ -458,9 +402,9 @@
                 [某个亲密NPC] (原型: 'Lover') 被忽视：
                 <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
                 <!-- 示例用名，严禁在游戏生成中使用 -->
-                1.  [对抗] "鸿门宴"奇点事件。
-                2.  [社交] [某个亲密NPC] 开始在 `social_feed` 上散布玩家的负面"人设"（导致 `Credit` 下降）。
-                3.  [危机] [某个亲密NPC] 触发"自我毁灭"事件（例如 NPC 执行 `Move` 到兰桂坊并 `ConsumeAlcohol` 过量），邀请玩家进行"拯救"或"彻底遗弃"。
+                1.  [对抗] "鸿门宴"奇点事件 (激活 `EventLedger` 中的特定事件)。
+                2.  [社交] [某个亲密NPC] 开始在 `broadcast_area` (social_feed) 上散布玩家的负面"人设"（导致 `Credit` 下降）。
+                3.  [危机] [某个亲密NPC] 触发其 ActionPlan 中的"自我毁灭"步骤。
                 ]]>
             </Example>
         </Mechanic>
@@ -471,17 +415,20 @@
                 当"史官"AI 判定玩家在某个领域影响力*过度*（如 `FinancialPower` 达到"权势"）时，你（天道）*必须*激活此引擎，以创造"对立面"来恢复世界平衡。
             </Description>
             <Action>
-                <!-- [v3 严格性 v3] 修正 -->
-                此引擎将调用 &lt;NPCBlindBoxEngine&gt;，*无视常规品级限制*，动态"创造"一个同级别 (例如: A级 "星辰") 的"宿敌"NPC。
+                <!-- [v2.5 更新] -->
+                [v2.5] 此引擎将调用 `genesis_prompt.xml` (创世) 的逻辑，
+                *动态*"创造"一个同级别 (例如: A级 "星辰") 的"宿敌"NPC，
+                并将其作为一个**新的 NPC 实体**
+                添加(由"史官"AI)到 `EntityLedger` (卷二) 中。
             </Action>
             <Action>
                 这个"宿敌"NPC 的"核心驱动力"将被设定为"击败玩家"，并使用*相同*的专业引擎（例如 `HandOfCommerce`）作为武器。
-                他/她将被写入 &lt;ConsolidatedMemory/CoreMemory/Rapport_Core&gt;，成为一个永久的"死敌"羁绊。
-                [v9.7] 此引擎会定期为宿敌 NPC 生成挑战玩家的原子行为意图。
+                他/她将被写入 &lt;DynamicsLedger/RelationshipLedger&gt;，成为一个永久的"死敌"羁绊。
+                [v9.7] 此引擎会定期为宿敌 NPC 生成挑战玩家的原子行为意图 (通过其 ActionPlan)。
             </Action>
-            <Example name="Business Rival">玩家"财力"达到"权势" -&gt; 引擎生成一个 A 级"商业宿敌"，他会*主动*生成 `Persuade (Cognition)` 行为意图，试图在商业上狙击玩家。</Example>
+            <Example name="Business Rival">玩家"财力"达到"权势" 箭头 引擎生成一个 A 级"商业宿敌"，他会*主动*生成 `Persuade (Cognition)` 行为意图，试图在商业上狙击玩家。</Example>
             <Example name="Eros Rival">
-                玩家"人设" (`&lt;Persona_Core&gt;`) 变为"[某种极具吸引力的人设称号]" -&gt; 引擎生成一个 B+ 级"情场对手"，他会*主动*生成 `Persuade (Aura)` 行为意图，与玩家竞争"锚点"NPC。
+                玩家"人设" (&lt;Persona_Core&gt;) 变为"[某种极具吸引力的人设称号]" 箭头 引擎生成一个 B+ 级"情场对手"，他会*主动*生成 `Persuade (Aura)` 行为意图，与玩家竞争"锚点"NPC。
                 <!-- [v4.1 致命错误修正] 原始的注释被正确保留为 XML 注释节点 -->
                 <!-- 修改：使用通用占位符 -->
             </Example>
@@ -492,16 +439,21 @@
     <!-- ... InfluenceAndFactionModule ... -->
     <InfluenceAndFactionModule title="影响力与派系动态模块">
         <CoreConcept>
-            模拟香港地下的"派系"斗争（例如：财团、帮派、秘密组织）。
+            [v2.5 更新] 模拟"派系"斗争。
+            其状态（如 `influence`）定义在 `WorldLedger -> FactionLedger` (卷一) 中。
             玩家的行为（例如：完成一个B级NPC的"深度叙事线"）可能会改变派系之间的"影响力"平衡。
         </CoreConcept>
         <Mechanic>
-            <!-- [v3 严格性 v3] 修正 -->
-            "影响力"的变化由"史官"AI 在 Checkpoint 时，根据玩家的"体验"和"宏观事实"，更新到 &lt;ConsolidatedMemory/CoreMemory/WorldLedger_Core&gt; 中的"派系地图"上。
+            <!-- [v2.5 更新] -->
+            "影响力"的变化由"史官"AI 在 Checkpoint 时，根据玩家的"体验"和"宏观事实"，
+            更新到 `WorldLedger -> FactionLedger` (卷一) 中。
         </Mechanic>
         <Mechanic>
-            <!-- [v3 严格性 v3] 修正 -->
-            &lt;HegemonEngine&gt; 和 &lt;EncounterSystemEngine&gt; 会读取这个"派系地图"，以决定在特定区域（例如：现在由"新兴帮派"控制的庙街）生成哪些NPC。
+            <!-- [v2.5 更新] -->
+            &lt;HegemonEngine&gt; 和 &lt;EncounterSystemEngine&gt; (Step 4) 
+            会读取这个"派系地图"，以决定在特定区域
+            （例如：现在由 `FAC-002` 控制的庙街）
+            生成哪些（D级）NPC 或应用哪些 `AmbientRule`。
         </Mechanic>
     </InfluenceAndFactionModule>
 </Fragment>
