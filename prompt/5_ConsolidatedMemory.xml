@@ -1,18 +1,18 @@
 <!-- 
-  "小世界" v2.5 (单文件模板版 - 增加连续性锚点)
+  "小世界" v9.9-D (动态主权 + 配置化叙事 升级版)
   
-  [v2.5 更新]
-  - 增加了 [卷四: 连续性总账]，用于存储“史官”AI
-    生成的"即时衔接上下文"(ICC)。
-  - 这是为了解决 Checkpoint (清空上下文) 后，
-    “宪法”AI 不知道上一回合“最后一秒”发生了什么的问题，
-    确保剧情的无缝连贯。
+  [v9.9-D 架构变更]
+  - [v9.9-D] 在 [卷二: 实体] -> <NPC> 结构中，
+    新增了 <Drives> 模块，用于“动态压力心跳”系统。
+  - [v9.9-B] 在 <ConsolidatedMemory> 根下，
+    新增了 [卷五: 叙事风格配置] (<StyleConfig>) 模块。
+    这使得“风格”成为“小世界”数据的一部分，实现了“风格即数据”。
 -->
-<ConsolidatedMemory version="SmallWorld_v2.5_Single_wICC" title="[玩家定义的世界标题]">
+<ConsolidatedMemory version="SmallWorld_v9.9-D" title="[玩家定义的世界标题]">
 
     <!-- 
       卷一: 世界总账 (World Ledger)
-      (结构同 v2.4)
+      (结构无变化)
     -->
     <WorldLedger>
         <!-- 创世元数据 -->
@@ -64,7 +64,7 @@
 
     <!-- 
       卷二: 实体 (The Actors)
-      (结构同 v2.4)
+      (v9.9-D 升级)
     -->
     <EntityLedger>
         <!-- 玩家实体 -->
@@ -73,6 +73,8 @@
             <VolatileState>
                  <CurrentMood state="[初始情绪]" intensity="[0.5]"/>
                  <Composure value="[100/100]"/>
+                 <!-- [v1.5] Schema 一致性修正 -->
+                 <LongTermEffects/>
             </VolatileState>
         </Player>
     
@@ -134,22 +136,42 @@
                     <PlayerPath_Punish description="[惩罚路径 1]"/>
                 </Conflict>
             </CoreTension>
+            
+            <!-- 
+              [v9.9-D 新增] 
+              H. 动态压力系统 (The Pressure)
+              由 "宪法"AI (Step 5) 动态模拟 
+            -->
+            <Drives>
+                <Drive type="[e.g., Libido, Paranoia]" 
+                       base_growth_rate="[e.g., 5.0]" 
+                       leak_trigger="[e.g., 90.0]"
+                       current_pressure="[e.g., 10.0]">
+                    <LeakActions>
+                        <Action>[e.g., Self-stimulation]</Action>
+                        <Action>[e.g., Post cryptic message on social_feed]</Action>
+                    </LeakActions>
+                </Drive>
+                <!-- ... 可配置多个 Drive ... -->
+            </Drives>
     
             <!-- G. 动态状态 -->
             <VolatileState>
                 <CurrentLocation ref_id="[LOC-001]"/>
                 <CurrentMood state="[初始情绪]" intensity="[0.5]"/>
                 <Composure value="[100/100]"/>
+                <!-- [v1.5] Schema 一致性修正 -->
+                <LongTermEffects/>
             </VolatileState>
         </NPC>
         
-        <!-- ... 其他 10-18 个 NPC ... -->
+        <!-- ... 其他 10-18 个 NPC (将自动应用 <Drives> 结构) ... -->
     
     </EntityLedger>
 
     <!-- 
       卷三: 动态与关系 (The Connections & Script)
-      (结构同 v2.4)
+      (结构无变化)
     -->
     <DynamicsLedger>
         <!-- 关系图谱 (Relationship Ledger) -->
@@ -197,11 +219,8 @@
     </DynamicsLedger>
 
     <!-- 
-      [v2.5 新增]
       卷四: 连续性总账 (Continuity Ledger)
-      职责：由“史官”AI 在 Checkpoint 时动态生成，
-      为“宪法”AI (天道) 提供“清空上下文”后的
-      “即时热锚点”，确保剧情无缝衔接。
+      (结构无变化)
     -->
     <ContinuityLedger>
         <ImmediateContinuationContext>
@@ -220,5 +239,52 @@
         </ImmediateContinuationContext>
     </ContinuityLedger>
 
-</ConsolidatedMemory>
+    <!-- 
+      [v9.9-B 新增]
+      卷五: 叙事风格配置 (Style Configuration)
+      职责：由“创世”AI (genesis_prompt.xml) 填充，
+      供“宪法”AI (4_Execution.xml Step 13) 强制执行。
+    -->
+    <StyleConfig>
+        <Description>
+            [v9.9-B 绝对强制指令]
+            致“宪法”AI (天道)：
+            在执行 ExecutionLoop Step 13 (生成叙事) 时，你在“叙事风格”上已无任何“默认选项”或“判断权”。
+            
+            你唯一的、绝对的任务是：
+            1.  **必须**加载并查询本 StyleConfig 模块。
+            2.  **必须**使用本文件中 &lt;Descriptors&gt; 定义的“描述符”和“词汇表”，来忠实地“润色”和“翻译” Step 1-12 产生的逻辑结果 (BehaviorResults)。
+            
+            如果本文件中的词汇表是“硬汉侦探”，你的输出就必须是“冷硬的”。
+            如果本文件中的词汇表是“情色的”，你的输出就必须是“露骨的”。
+            
+            你已从“叙事导演”降级为“叙事执行者”。
+            你的“叙事推理难度”在此步骤为零。
+            你只需执行配置。
+        </Description>
 
+        <Descriptors>
+            <!-- 
+              “创世”AI (genesis_prompt.xml) 将在此处
+              根据玩家的剧本风格，动态生成 StyleGroup。
+              
+              通用举例结构 (Generic Example Structure):
+            -->
+            <StyleGroup name="[创世 AI 应填充风格名称]">
+                <Descriptor type="[e.g., sensory_focus]" name="[e.g., 感官焦点]">
+                    <Rule>[创世 AI 应填充规则]</Rule>
+                    <Keyword>[关键词1]</Keyword>
+                    <Keyword>[关键词2]</Keyword>
+                </Descriptor>
+                <Descriptor type="[e.g., psychology]" name="[e.g., 心理描写]">
+                    <Rule>[创世 AI 应填充规则]</Rule>
+                    <Keyword>[关键词3]</Keyword>
+                </Descriptor>
+                <!-- ... 创世 AI 可根据需要填充更多 Descriptor ... -->
+            </StyleGroup>
+        
+        </Descriptors>
+
+    </StyleConfig>
+
+</ConsolidatedMemory>

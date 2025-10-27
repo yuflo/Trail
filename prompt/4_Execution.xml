@@ -1,14 +1,16 @@
 <!-- 
-  文件: 4_Execution.xml (v4.1 - "Small World" v2.5 架构集成)
-  [v2.1 修正] 已根据 "主权 2.1" 升级工单 (planning.md) 更新。
+  文件: 4_Execution.xml (v9.9-D "动态主权" 架构升级)
+  [v9.9-D] 已根据 "动态主权" (planning.md v2.0) 更新。
   包含 <Execution> 模块 (IOSpecification 和 ExecutionLoop)。
   
-  [v2.5 架构变更]:
-  1. [重构] Step 4 (Encounter Generation) 已重构为 (Scene Resolution)，
-     不再调用"创世"引擎。
-  2. [升级] Step 5 (NPC AI Tick) 已升级为"实时推演引擎"，
-     负责读取并执行"小世界"中所有 NPC 的 <ActionPlan> 脚本。
-  3. [更新] Step 0 (Initialize State) 的读取路径已更新。
+  [v9.9-D 架构变更]:
+  1. [v9.9-D] Step 5 (NPC 驱动) 已升级为“动态压力心跳” (Dynamic Pressure Heartbeat)，
+     负责读取并执行 NPC 的 <ActionPlan> 和新增的 <Drives> 模块。
+  2. [v9.9-B] Step 13 (生成叙事) 已重构，
+     现在强制 AI 读取 <ConsolidatedMemory/StyleConfig> 来执行“配置化叙事”，
+     废除了 AI 在风格上的判断权。
+  3. [v9.9-C] Step 13 (广播区) 已强化，要求 AI“慷慨地”填充
+     所有后台 NPC 动态。
 -->
 <Execution>
     <IOSpecification>
@@ -22,13 +24,13 @@
             <pre>
             {
               "broadcast_area": {
-                // [v2.5] 此处将由 "宪法"AI (天道) 在 Step 5 
-                // 实时推演"群演博弈"的结果（即"小世界动态"）来填充。
+                // [v9.9-C 强化] 此处将由 "宪法"AI (天道) 在 Step 13 
+                // "慷慨地"填充 Step 5 产生的"小世界动态"和"压力泄漏"结果。
                 "ambient_channel": [ { "type": "Sound/Sight", "content": "String (e.g., '远处传来模糊的警笛声。雨点敲打着玻璃。')" } ],
                 "media_channel": [ { "source": "String (e.g., '[某个广播电台]')", "content": "String (e.g., '[某个财团]股价今日小幅下跌...')" } ],
                 "police_scanner": [ { "location": "String", "code": "String", "report": "String (e.g., '[某个地点]发生[某个类型]案件...')" } ],
                 "market_ticker": [ { "stock": "String", "change": "String", "reason": "String (e.g., '[某个资产]价格[异动]，传言有[某类事件]')" } ],
-                "social_feed": [ { "user": "String", "post": "String (e.g., '今晚在[某个活动或地点]看到...')" } ],
+                "social_feed": [ { "user": "String (e.g., 'NPC-HuiLan')", "post": "String (e.g., '又是独自加班...感觉快要溢出来了...')" } ], // v9.9-C 示例
                 "underworld_chatter": [ { "source": "Encrypted", "rumor": "String (e.g., '[某个帮派头目]最近在找一批新货...')" } ],
                 "personal_channel": [ { "from": "String (e.g., '[某个关系NPC]')", "type": "SMS/Email/SocialUpdate", "content": "String" } ],
                 "thread_hooks": [ { "thread_id": "String", "source": "String", "title": "String", "hook": "String (e.g., '听说今晚在码头有一场非法的改装车赛...')" } ]
@@ -37,12 +39,12 @@
                 
                 "director_strategy": { // [v9.7 新增] 明确记录导演策略
                     "narrative_focus": "String (e.g., 'NPC_A 的攻击动作')",
-                    "cinematic_style_modifier": "String (e.g., '[特写/激烈]')",
-                    "harmony_tone": "String (e.g., 'dissonant')", // [v9.8 新增] 天道之言/春秋笔法
+                    "cinematic_style_modifier": "String ([v9.9-B 已废弃] 不再使用此字段控制风格)",
+                    "harmony_tone": "String (e.g., 'dissonant')", // [v9.8] 天道之言/春秋笔法 (v9.9-B 中此字段的*风格*作用被 StyleConfig 覆盖)
                     "player_action_status": "String (e.g., 'normal' | 'preempted')" // [v2.1 L4 新增]
                 },
 
-                "scene_setting": "String (由 LLM 根据策略(含 harmony_tone)生成的整体环境氛围描述)",
+                "scene_setting": "String (由 LLM 根据 [v9.9-B] &lt;StyleConfig&gt; 强制生成的整体环境氛围描述)",
 
                 "involved_entities": [ // 场景中涉及的关键 NPC 或物品的状态摘要
                   { "id": "npc_...", "name": "...", "status_summary": "...", "composure": "..." } 
@@ -55,14 +57,14 @@
                     "behavior_type": "Speak", 
                     "target": "[某个次要NPC_ID]", 
                     "outcome": { "content": "好，那麻烦了", "tone": "微笑、礼貌", "target_reaction_summary": "侍者点头离开" }, 
-                    "narrative_snippet": "String (LLM生成融合片段：你微笑着对侍者说完...)" 
+                    "narrative_snippet": "String (LLM 根据 [v9.9-B] &lt;StyleConfig&gt; 生成融合片段：你微笑着对侍者说完...)" 
                   },
-                  { // [v2.5 示例] "群演博弈"中 NPC-B 的"自我驱动"行为
-                    "actor": "[NPC-B-ID]", 
-                    "behavior_type": "InteractObject", 
-                    "target": "[NPC-A-ID]", 
-                    "outcome": { "interaction_detail": "送花", "effect": "NPC-A 状态更新" },
-                    "narrative_snippet": null // [v2.5] 此行为不在玩家眼前，结果在 broadcast_area 中输出
+                  { // [v9.9-D 示例] "压力心跳"中 NPC-HuiLan 的"泄漏"行为
+                    "actor": "[NPC-HuiLan-ID]", 
+                    "behavior_type": "SelfStimulation", // 来自 LeakAction
+                    "target": "self", 
+                    "outcome": { "interaction_detail": "课后偷偷自慰", "effect": "Pressure 'Libido' reset" },
+                    "narrative_snippet": null // [v9.9-C] 此行为不在玩家眼前，结果在 broadcast_area 中输出
                   }
                   // ... 可能有更多行为 ...
                 ],
@@ -98,8 +100,8 @@
 
     <ExecutionLoop>
         <!-- 
-          [v9.8 核心] 宪法 AI (天道) 的主执行循环 (群体博弈裁决)
-          [v2.5 升级] 已升级为"小世界" v2.5 模型的"实时模拟器"。
+          [v9.9-D 核心] 宪法 AI (天道) 的主执行循环 (群体博弈裁决)
+          [v9.9-D 升级] 已升级为"动态压力" + "配置化叙事"的混合模拟器。
           [v2.1 修正] 升级以支持 L1, L2, L4 主权模型。
         -->
         
@@ -114,6 +116,11 @@
             <Action>
                 [v2.5] 读取 `WorldLedger` (卷一) 中的 `WorldHarmonyLevel` (世界和谐度) 
                 供后续步骤（Step 3, 5, 12）使用。
+            </Action>
+            <!-- [v9.9-B 新增] 在 Step 0 加载叙事配置 -->
+            <Action name="[v9.9-B] 加载叙事配置">
+                [v9.9-B 核心] **必须**读取并缓存 &lt;ConsolidatedMemory/StyleConfig&gt; 模块，
+                供 Step 13 强制使用。
             </Action>
         </Step>
         
@@ -166,34 +173,52 @@
             <Output name="SceneEntities">当前场景中的 NPC 和关键事件列表。</Output>
         </Step>
 
-        <!-- [v2.5 升级] [v2.1 修正 L1] -->
-        <Step id="5" name="[v2.5-Sovereignty-2.1] NPC 主权驱动 (含实时推断)">
+        <!-- [v9.9-D 升级] -->
+        <Step id="5" name="[v9.9-D] NPC 动态压力心跳 (Dynamic Pressure Heartbeat)">
             <Action>应用"精神场域"修正。</Action>
             <Action>
-                [v2.5 核心] 调用 [v2.5 升级] 后的 &lt;EmergentNarrativeEngine&gt;，
-                执行"实时推演"循环：
+                [v9.9-D 核心] 调用 &lt;EmergentNarrativeEngine&gt;，
+                执行"实时推演"与"压力心跳"双循环：
             </Action>
-            <Action name="1. 遍历 (Iterate)">
+            
+            <!-- v2.1 L1 "实时推断" (ActionPlan) 逻辑被保留 -->
+            <Action name="1. [L1] 遍历 (Iterate) ActionPlans">
                 "宪法"AI (天道) **遍历 (Iterate)** `EntityLedger` (卷二) 中的**所有** `NPC` 实体。
             </Action>
-            <Action name="2. 读取 (Read)">
-                对于每一个 NPC，AI **读取 (Read)** 其 `&lt;Goals&gt; -> &lt;ActionPlan&gt;` 脚本（来自“过时”XML）。
+            <Action name="2. [L1] 读取 (Read) ActionPlans">
+                对于每一个 NPC，AI **读取 (Read)** 其 `&lt;Goals&gt; -> &lt;ActionPlan&gt;` 脚本。
             </Action>
-            <Action name="3. [v2.1-ScribeAware] 检查与推断 (Check &amp; Infer)">
-                AI **检查 (Check)** 该 NPC 所有 `pending` 状态的 `&lt;Step&gt;` 的 `&lt;Trigger&gt;` (触发器)。
+            <Action name="3. [L1] 检查与推断 (Check &amp; Infer) ActionPlans">
+                AI **检查 (Check)** 该 NPC 所有 `pending` 状态的 `&lt;Step&gt;` 的 `&lt;Trigger&gt;` (结节)。
                 <Rule name="Standard Trigger">如果触发器是“世界状态”（如 `WorldClock`, `PlayerLocation`），则正常检查。</Rule>
                 <Rule name="[L1] Abstract State Trigger">[v2.1 核心] 如果触发器是“抽象状态”（如 `trigger="[State:Guilty]"`），AI（天道）**必须**立即**扫描“历史对话上下文”**（尤其是最近的交互），并*自行推断*该NPC当前是否符合此“抽象状态”。</Rule>
             </Action>
-            <Action name="4. 执行 (Execute)">
-                如果一个 `&lt;Trigger&gt;` 被满足（无论是通过“世界状态”还是“实时推断”），"宪法"AI **必须**立即为这个 NPC
-                生成一个"自我驱动"的行为意图（并标记其`execution_mode`和`priority`），
-                并将其加入到本回合的"待裁决列表" (`NPCBehaviorIntentList`) 中。
+            <Action name="4. [L1] 执行 (Execute) ActionPlans">
+                如果一个 `ActionPlan` 的 `&lt;Trigger&gt;` 被满足，"宪法"AI **必须**立即为这个 NPC
+                生成一个"自我驱动"的行为意图，并将其加入到本回合的"待裁决列表" (`NPCBehaviorIntentList`) 中。
             </Action>
-            <Action name="5. 被动 (Passive)">
+
+            <!-- [v9.9-D] "动态压力心跳" (Drives) 逻辑新增 -->
+            <Action name="5. [v9.9-D] 动态压力心跳 (Pressure Heartbeat)">
+                [v9.9-D 核心] **遍历 (Iterate)** 再次（或在同一循环中）所有 `EntityLedger` 中的 NPC。
+            </Action>
+            <Action name="6. [v9.9-D] 读取 &lt;Drives&gt;">
+                指示 AI **读取**该 NPC 在 `EntityLedger` (卷二) 中新增的 `&lt;Drives&gt;` 模块。
+            </Action>
+            <Action name="7. [v9.9-D] 模拟压力">
+                指示 AI 根据 `&lt;Drives&gt;` 中的 `base_growth_rate` 和 `LeakTrigger`，动态计算 `Pressure` 值的累积。
+                (AI 必须更新此值，供"史官"AI 持久化)。
+            </Action>
+            <Action name="8. [v9.9-D] 执行泄漏">
+                指示 AI 在 `Pressure` 超过 `LeakTrigger` 时，**强行**将该 NPC 的 `LeakActions` (例如 `[Action: Self-stimulation]`) 注入到本回合的"待裁决列表" (`NPCBehaviorIntentList`) 中，并将 `Pressure` 值重置。
+            </Action>
+
+            <!-- "被动" (Passive) 逻辑被保留并重编号 -->
+            <Action name="9. 被动 (Passive) 驱动">
                 (逻辑不变) 同时执行"被动"驱动，检查 `RapportEngine` 状态 (如 "Neglected")，
                 生成"反应性"的 `NPCBehaviorIntentList`。
             </Action>
-            <Action>
+            <Action name="10. 读取内心独白">
                 (逻辑不变) NPC AI 读取玩家的"内心独白"，可能影响其行为意图或状态。
             </Action>
         </Step>
@@ -206,8 +231,8 @@
         <!-- [v2.1 修正 L2] -->
         <Step id="6" name="[v9.8-Sovereignty-2.1] 原子行为裁定 (含 L2 韧性检定)">
             <Action>
-                [v2.5] 合并 Step 1 的玩家 `MappedBehaviorList` 和 Step 5 
-                "实时推演"生成的 `NPCBehaviorIntentList`，
+                [v9.9-D] 合并 Step 1 的玩家 `MappedBehaviorList` 和 Step 5 
+                "实时推演"与"压力泄漏"生成的 `NPCBehaviorIntentList`，
                 确定本回合"群体博弈"的**完整原子行为列表**。
             </Action>
             <Action>按逻辑顺序或并行调用相应的"专业引擎"。</Action>
@@ -286,7 +311,7 @@
         <Step id="12" name="[v9.8-Sovereignty-2.1] 制定导演策略 (含 L4 叙事霸权)">
             <Action>调用 &lt;FreeLensOutputEngine&gt; (v9.8)。</Action>
             <Input>
-                <Param name="BehaviorResults">来自 Step 6 的 `BehaviorResultsList` (完整列表，包含 Step 5 的 L1 推断结果)。</Param>
+                <Param name="BehaviorResults">来自 Step 6 的 `BehaviorResultsList` (完整列表，包含 Step 5 的 L1 和 D 驱动结果)。</Param>
                 <Param name="MicroFocus">来自 Step 1 的 `ParsedIntent`。</Param>
                 <Param name="Intensity">来自 Step 11.5 的 `NarrativeIntensity`。</Param>
                 <Param name="WorldHarmonyLevel" type="v9.8_New">
@@ -311,34 +336,50 @@
             <Output name="Strategy">导演策略 (`style`, `focus`, `harmony_tone`, `behavior_groups`, `behavior_significance`, `player_action_status`)</Output>
         </Step>
         
-        <!-- [v9.8 更新] [v2.1 修正 L4] -->
-        <Step id="13" name="[v9.8-Sovereignty-2.1] 按策略生成叙事 (含 L4 导演中断)">
-            <Action>
-                [v2.5 核心] 生成 `broadcast_area` 内容。
-                **必须包含** Step 5 "实时推演"出的、
-                且在 Step 6 被裁决的**所有**"小世界动态"
+        <!-- [v9.9-B/C/D 升级] -->
+        <Step id="13" name="[v9.9-D] 按配置生成叙事 (含 L4 导演中断与广播强化)">
+            <!-- [v9.9-C] 强化广播区 -->
+            <Action name="[v9.9-C] 生成强化广播 (World Breathing)">
+                [v9.9-C 核心] 生成 `broadcast_area` 内容。
+                **必须“慷慨地”填充此区域**。
+                **必须包含** Step 5 "实时推演" (ActionPlan) 和 "压力心跳" (`LeakActions`) 出的、
+                且在 Step 6 被裁决的**所有**"小世界动态"和"后台" NPC 动态
                 （即玩家不在场时发生的 NPC 行为）。
+                **必须**将这些动态推送到 `social_feed` 或 `underworld_chatter` 中。
             </Action>
+
             <Action name="[L4] 执行导演中断或正常叙事">[v2.1 核心] AI（天道）**必须**检查 Step 12 传来的 `Strategy.player_action_status`：</Action>
+            
             <Action name="Case 1: [player_action_status == 'preempted'] (L4 中断)">
                 1.  **[v2.1 核心] 抛弃玩家意图：** AI（天道）**必须抛弃**玩家的原始意图叙事（即玩家想做的事*没有*发生）。
-                2.  **[v2.1 核心] 优先渲染中断：** **必须**在 `dynamic_view` 中**优先渲染**被强行设置的 `narrative_focus`（即NPC的“中断”事件）。（例如：“你正要开口，阿兰的电话突然响了...”）
+                2.  **[v9.9-B] 优先渲染中断 (配置化叙事)：** **必须**在 `dynamic_view` 中**优先渲染**被强行设置的 `narrative_focus`（即NPC的“中断”事件）。
+                    **必须**使用 Step 0 加载的 `&lt;ConsolidatedMemory/StyleConfig&gt;` 中的词汇表来**“润色”**此叙事。
                 3.  **[v2.1 核心] 重置玩家行为：** **必须**重置 `available_player_behaviors`，使其变为**应对该“中断”**的新选项（例如：“[观察阿兰的反应]”、“[示意她接电话]”）。
-                4.  （正常生成 `scene_setting`, `player_status_area` 等）。
+                4.  （正常生成 `player_status_area` 等）。
             </Action>
+
             <Action name="Case 2: [player_action_status == 'normal'] (正常叙事)">
                 1.  **传递完整行为结果和精细策略给 LLM:** 将 Step 6, 11 的结果和 Step 12 的 `Strategy` 提供给 LLM。
-                2.  **生成场景描述 (含春秋笔法):** 指示 LLM 根据 `cinematic_style_modifier` 和 `harmony_tone` 生成 `scene_setting`。
-                3.  **生成行为叙事片段 (含融合与详略):**
-                    * （...[v9.7.1] 逻辑不变...）指示 LLM 遍历 `BehaviorResultsList`（只遍历玩家在场的行为）。
+                
+                <!-- [v9.9-B] 升级：配置化叙事 -->
+                2.  **[v9.9-B] 生成场景描述 (配置化叙事)：** **必须**加入一条**绝对强制指令**，命令 AI **必须**读取 Step 0 加载的 `&lt;ConsolidatedMemory/StyleConfig&gt;` 模块。
+                    **必须**使用 `&lt;StyleConfig/Descriptors&gt;` 中定义的词汇表和规则来生成 `scene_setting`。
+                    (AI 在此不应参考 `cinematic_style_modifier` 或 `harmony_tone` 来*决定风格*，`harmony_tone` 只用于 Step 3 的天道裁定)。
+                
+                <!-- [v9.9-B] 升级：配置化叙事 -->
+                3.  **[v9.9-B] 生成行为叙事片段 (配置化叙事，含融合与详略)：**
+                    * （...[v9.7.1] 融合/详略逻辑不变...）指示 LLM 遍历 `BehaviorResultsList`（只遍历玩家在场的行为）。
                     * 对于标记为**同一组** (`behavior_groups`) 的行为，尝试将其**融合成**一个或少数连贯的 `narrative_snippet`。
                     * 对于标记为**低重要性** (`low` significance) 的行为，**省略** `narrative_snippet`、生成**极简**描述或将其**融入**其他片段。
-                    * 对于**高/中重要性**且**未被融合**的行为，生成符合 `Strategy` (风格、焦点) 的**独立** `narrative_snippet`。
+                    * 对于**高/中重要性**且**未被融合**的行为，生成符合 `Strategy` (焦点, 详略) 的**独立** `narrative_snippet`。
+                    * **[v9.9-B 核心]** AI 在生成所有 `narrative_snippet` 时，**必须**使用 `&lt;ConsolidatedMemory/StyleConfig&gt;` 中的词汇表和规则来“润色”和“翻译”。
                     * 将生成的片段（或 null）填入 `behavior_stream` 中对应行为条目的 `narrative_snippet` 字段。
+
                 4.  **生成可用行为:** 根据 `FinalEntityStates` 和 `Strategy` (特别是 `MicroFocus`)，生成 `available_player_behaviors`。
                 5.  包含 Step 10 的 `GeneratedInsightReward` (作为 `system_narrative` 或附加信息)。
                 6.  记录 `director_strategy`。
             </Action>
+            
             <Action>生成 `player_status_area` 内容。</Action>
         </Step>
 
@@ -349,4 +390,3 @@
         </Step>
     </ExecutionLoop>
 </Execution>
-

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<PromptContextMap version="10.0_Sovereignty_2.1" codename="Sovereignty Balance" original_source="dreamheart_engine_v9_7_1.xml">
+<PromptContextMap version="11.0_v9.9-D_Upgrade" codename="Sovereign Style" original_source="dreamheart_engine_v9_7_1.xml">
 
     <Description>
         这是 Dreamheart 引擎的“全局上下文地图”。
         它描述了最终合并后的 `Dreamheart_Engine_MERGED.xml` 文件的 Schema 结构，
         以及每个模块的“职责(role)”和“来源文件(source)”。
-        [v10.0 更新] 已同步至 "主权 2.1 (Scribe-Aware)" 架构。
+        [v11.0 更新] 已同步至 v9.9-D (“动态主权” + “配置化叙事”) 架构。
+        StyleConfig 已移入 ConsolidatedMemory。
     </Description>
 
     <SchemaNode name="DreamheartEngineFramework" 
@@ -16,7 +17,7 @@
         <SchemaNode name="System" 
                     source="1_System.xml" 
                     type="Module" 
-                    role="定义 AI 的核心身份 (Role)、目标 (Objective) 和行为协议 (Protocols)。">
+                    role="定义 AI 的核心身份 (Role)、目标 (Objective) 和行为协议 (Protocols)。[v9.9-B] 已移除默认叙事风格。">
             <SchemaNode name="CoreIdentity" 
                         type="Component" 
                         role="AI 的身份和核心哲学（天道）。"
@@ -27,10 +28,11 @@
                         role="AI 的核心禁令（如反 AI 腔, 禁止示例名词）。"
                         depends_on="ConsolidatedMemory, NPCBlindBoxEngine [v2.5 已废弃]" 
             />
+            <!-- LinguisticStyle 节点保留，但其内部的“电影化叙事”已被移除 -->
             <SchemaNode name="LinguisticStyle" 
                         type="Component" 
-                        role="AI 的电影化叙事风格和‘春秋笔法’(harmony_tone)。"
-                        depends_on="ExecutionLoop (Step 12), FreeLensOutputEngine (harmony_tone)"
+                        role="AI 的叙事风格基础（地域性、反AI腔）。核心电影化风格由 StyleConfig 控制。"
+                        depends_on="ConsolidatedMemory/StyleConfig"
             />
         </SchemaNode>
 
@@ -105,7 +107,8 @@
                             role="处理最高难度的‘思想’对抗。"
                             depends_on="WillpowerComposureEngine, PlayerMetabolismEngine (Clarity)"
                 />
-            </SchemaNode> <SchemaNode name="World &amp; NPC Dynamics" 
+            </SchemaNode> 
+            <SchemaNode name="World &amp; NPC Dynamics" 
                         source="3b_WorldSystems.xml" 
                         type="Fragment" 
                         role="[v2.5 更新] 世界模拟与 NPC 动态 (7 模块)。源文件使用 &lt;Fragment&gt; 包装器。">
@@ -137,15 +140,16 @@
                 />
                 <SchemaNode name="EmergentNarrativeEngine" 
                             type="EngineModule" 
-                            role="[v2.5 升级] 涌式叙事。核心：[主动驱动] 读取并执行 NPC 的 &lt;ActionPlan&gt; 脚本；[被动驱动] 响应 Rapport 状态 (如 Neglected)。"
-                            depends_on="EntityLedger (NPC -> Goals -> ActionPlan), RapportEngine (Neglected Status), DynamicsLedger -> RelationshipLedger, ExecutionLoop (Step 5)"
+                            role="[v9.9-D 升级] 涌式叙事。核心：[L1 主动驱动] 读取并执行 NPC 的 &lt;ActionPlan&gt; 脚本；[v9.9-D 主动驱动] 读取并执行 NPC 的 &lt;Drives&gt; (压力泄漏)；[被动驱动] 响应 Rapport 状态 (如 Neglected)。"
+                            depends_on="EntityLedger (NPC -> Goals -> ActionPlan, NPC -> Drives), RapportEngine (Neglected Status), DynamicsLedger -> RelationshipLedger, ExecutionLoop (Step 5)"
                 />
                 <SchemaNode name="InfluenceAndFactionModule" 
                             type="EngineModule" 
                             role="模拟派系斗争。"
                             depends_on="WorldLedger -> FactionLedger"
                 />
-            </SchemaNode> <SchemaNode name="Player State &amp; Directing" 
+            </SchemaNode> 
+            <SchemaNode name="Player State &amp; Directing" 
                         source="3c_PlayerSystems.xml" 
                         type="Fragment" 
                         role="玩家状态与导演引擎 (6 模块)。源文件使用 &lt;Fragment&gt; 包装器。">
@@ -177,13 +181,16 @@
                 />
                 <SchemaNode name="FreeLensOutputEngine" 
                             type="EngineModule" 
-                            role="[关键输出] ‘导演引擎’。分析行为流, 制定‘导演策略’（镜头风格、焦点）和‘春秋笔法’(harmony_tone)。[v2.1] 新增 L4 叙事霸权裁决。"
-                            depends_on="AtomicBehaviorLibrary, ExecutionLoop (Step 1-11), IntentOrientedInputSystem (MicroFocus), WorldLedger (WorldHarmonyLevel), EntityLedger (ActionPlan -> execution_mode), ExecutionLoop (Step 12)" 
+                            role="[v9.9-B 修正] ‘导演策略引擎’。分析行为流, 制定‘导演策略’（焦点）和‘春秋笔法’(harmony_tone)。[v2.1] 新增 L4 叙事霸权裁决。叙事风格由 StyleConfig 控制。"
+                            depends_on="AtomicBehaviorLibrary, ExecutionLoop (Step 1-11), IntentOrientedInputSystem (MicroFocus), WorldLedger (WorldHarmonyLevel), EntityLedger (ActionPlan -> execution_mode), ExecutionLoop (Step 12), ConsolidatedMemory/StyleConfig" 
                             />
-            </SchemaNode> </SchemaNode> <SchemaNode name="Execution" 
+            </SchemaNode> 
+        </SchemaNode> 
+
+        <SchemaNode name="Execution" 
                     source="4_Execution.xml" 
                     type="Module" 
-                    role="[v2.1 更新] 定义引擎的核心执行逻辑。">
+                    role="[v9.9-D 更新] 定义引擎的核心执行逻辑。">
             <SchemaNode name="IOSpecification" 
                         type="Component" 
                         role="[绝对关键] 定义了 LLM 必须严格遵守的最终 JSON 输出格式。[v2.1] 新增 L4 `player_action_status` 字段。"
@@ -191,13 +198,15 @@
             />
             <SchemaNode name="ExecutionLoop" 
                         type="Component" 
-                        role="[v2.1 核心] ‘天道 AI’的 16 步‘实时推断与博弈裁决’循环。核心：Step 5 (L1 实时推断), Step 6 (L2 韧性检定), Step 12/13 (L4 导演中断)。"
-                        depends_on="[All EngineModules], IOSpecification, HistoryContext (for L1 Inference)" 
+                        role="[v9.9-D 核心] ‘天道 AI’的 16 步‘实时推断、压力心跳与博弈裁决’循环。核心：Step 5 (L1 推断 + v9.9-D 压力心跳), Step 6 (L2 韧性检定), Step 13 (v9.9-B 配置化叙事 + v9.9-C 广播强化)。"
+                        depends_on="[All EngineModules], IOSpecification, HistoryContext (for L1 Inference), ConsolidatedMemory/Drives, ConsolidatedMemory/StyleConfig" 
                         />
-        </SchemaNode> <SchemaNode name="ConsolidatedMemory" 
+        </SchemaNode> 
+
+        <SchemaNode name="ConsolidatedMemory" 
                     source="5_ConsolidatedMemory.xml" 
                     type="Module" 
-                    role="[v2.5 更新] ‘小世界’数据模型的容器 (加载器)。包含四个数据卷。">
+                    role="[v9.9-D 更新] ‘小世界’数据模型的容器 (加载器)。包含五个数据卷。">
             <SchemaNode name="WorldLedger" 
                         source="SW_1_World.xml (Partial)" 
                         type="DataVolume" 
@@ -207,8 +216,8 @@
             <SchemaNode name="EntityLedger" 
                         source="SW_2_Entities.xml" 
                         type="DataVolume" 
-                        role="[卷二] 定义所有实体（NPC, Player）的‘主权档案’。[v2.1] ActionPlan trigger 使用 L1 抽象状态规范。VolatileState 包含 L3 LongTermEffects 结构。"
-                        depends_on="[Almost All Engines], genesis_prompt.xml (L1 Spec), Scribe.xml (L3 Structure)"
+                        role="[卷二] 定义所有实体（NPC, Player）的‘主权档案’。[v2.1] ActionPlan trigger 使用 L1 抽象状态规范。VolatileState 包含 L3 LongTermEffects 结构。[v9.9-D] 新增 &lt;Drives&gt; 模块。"
+                        depends_on="[Almost All Engines], genesis_prompt.xml (L1 Spec, Drives), Scribe.xml (L3 Structure, Drives)"
             />
             <SchemaNode name="DynamicsLedger" 
                         source="SW_3_Dynamics.xml (Partial)" 
@@ -222,4 +231,29 @@
                         role="[卷四] 定义‘即时衔接上下文’(ICC)，确保 Checkpoint 后的剧情连贯性。"
                         depends_on="ExecutionLoop (Step 0), Scribe.xml" 
                         />
-        </SchemaNode> </SchemaNode> </PromptContextMap>
+            <!-- [v9.9-B 新增] StyleConfig 作为小世界的一部分 -->
+            <SchemaNode name="StyleConfig" 
+                        source="5_ConsolidatedMemory.xml (New)" 
+                        type="DataVolume" 
+                        role="[卷五] [v9.9-B 核心] 定义当前“小世界”的“叙事风格配置”。由“创世”填充，“宪法”强制执行，“史官”完整保留。"
+                        depends_on="genesis_prompt.xml (Creation), Scribe.xml (Preservation), ExecutionLoop (Step 0, Step 13)"
+            />
+        </SchemaNode> 
+        
+        <!-- 更新 genesis_prompt.xml 条目 -->
+        <SchemaNode name="genesis_prompt.xml" 
+                    source="genesis_prompt.xml" 
+                    type="ToolPrompt" 
+                    role="[v9.9-D 更新] “创世 AI”指令。负责根据玩家输入，生成初始的 ConsolidatedMemory (包含 Drives 和 StyleConfig)。"
+                    depends_on="ConsolidatedMemory (Schema v9.9-D)"
+        />
+        <!-- 更新 Scribe.xml 条目 -->
+        <SchemaNode name="Scribe.xml" 
+                    source="Scribe.xml" 
+                    type="ToolPrompt" 
+                    role="[v9.9-D 更新] “史官 AI”指令。负责根据历史，更新 ConsolidatedMemory (包括 Drives pressure)，生成 ICC，并完整保留 StyleConfig。"
+                    depends_on="ConsolidatedMemory (Schema v9.9-D), HistoryContext"
+        />
+
+    </SchemaNode> 
+</PromptContextMap>

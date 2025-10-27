@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  文件: prompt_update_guidelines.xml
+  文件: prompt_update_guidelines.xml (v1.1 - 核心戒律强化)
   目的: Dreamheart 引擎的“LLM 更新规范”。
   资产级别: 关键 (Key Asset)
 
@@ -26,6 +26,22 @@
         <Directive id="PrimeDirective">
             [最高原则] “严格的 XML 有效性”高于一切。
             任何导致 Python 解析器（lxml, ElementTree）失败的修改都是绝对禁止的。
+            [v1.1 补充] 输出不完整的文件内容（如代码片段、省略号）是导致 XML 无效的常见原因之一，必须避免。
+        </Directive>
+        
+        <!-- [v1.1 新增] 强调文件完整性 -->
+        <Directive id="FileIntegrityMandate">
+            [‼️ 绝对核心戒律 ‼️] 文件完整性至上 (File Integrity is Paramount)
+            **【绝对禁止】**你在交付任何被修改的 XML 文件时，使用任何形式的代码片段、省略号 (`...`)、`&lt;!-- ... existing code ... --&gt;` 注释或 diff 格式。
+            你**必须**输出目标文件的**【完整内容】**。
+            这是确保 XML 有效、避免合并错误、保证下游工具 (validator, merger) 正常工作的**唯一**方法。
+        </Directive>
+
+        <!-- [v1.1 新增] 强调模板与实例区分 -->
+        <Directive id="TemplateIntegrityMandate">
+            [‼️ 绝对核心戒律 ‼️] 模板与实例的严格区分 (Template vs. Instance Distinction)
+            **【绝对禁止】**在任何定义 Schema、规则或指令的“模板文件”（特别是 `5_ConsolidatedMemory.xml`, `genesis_prompt.xml`, `Scribe.xml`）中包含任何“实例数据”或可能产生引导/污染作用的具体示例（尤其是名词、描述性词汇）。
+            “模板文件”必须保持绝对通用，以适应任何玩家输入；“实例数据”会破坏通用性并导致 AI 输出错误。
         </Directive>
     </CoreMandates>
 
@@ -36,8 +52,8 @@
     <StrictXMLRules>
         <Directive id="Escaping">
             [致命错误警告] 你必须转义所有“纯文本”中出现的 XML 非法字符。
-            - 必须将 `<` 转义为 `&lt;` (例如: `&lt;ExecutionLoop&gt;`)
-            - 必须将 `&` 转义为 `&amp;` (例如: `Willpower &amp; Composure`)
+            - 必须将 `&lt;` 转义为 `&amp;lt;` (例如: `&amp;lt;ExecutionLoop&amp;gt;`)
+            - 必须将 `&amp;` 转义为 `&amp;amp;` (例如: `Willpower &amp;amp; Composure`)
         </Directive>
         <Directive id="CDATA">
             [关键] 当且仅当内容是“非 XML 数据载荷”时，才使用 CDATA。
@@ -46,7 +62,7 @@
             - 禁止在其他地方（如普通的 <Rule> 文本中）滥用 CDATA。
         </Directive>
         <Directive id="Comments">
-            [致命错误警告] XML 注释 (`<!-- ... -->`) 是“结构性”的，不是“文本”。
+            [致命错误警告] XML 注释 (`&lt;!-- ... --&gt;`) 是“结构性”的，不是“文本”。
             1. (结构): 注释必须被正确放置（作为标签的兄弟或子节点），绝不能被错误地转义并附加到“文本节点”的末尾（这是 3b-v1 的致命错误）。
             2. (非法嵌套): 绝不能在注释内部再次出现 `--` 字符串（这是 3b-v2 的致命错误）。
         </Directive>
@@ -75,9 +91,9 @@
         </Directive>
         <Directive id="Tag-ification">
             [Schema 进化原则 2] 不要把“逻辑”藏在“注释”里。
-            - (禁止): `<!-- [备注] 必须读取 <Rapport_Core> -->`
+            - (禁止): `&lt;!-- [备注] 必须读取 &lt;Rapport_Core&gt; --&gt;`
             - (推荐): 当你需要添加“实现备注”或“逻辑说明”时，
-              你应该创建一个“显式”的 XML 标签 (e.g., `<ImplementationNote>...&lt;Rapport_Core&gt;...</ImplementationNote>`)。
+              你应该创建一个“显式”的 XML 标签 (e.g., `<ImplementationNote>...&amp;lt;Rapport_Core&amp;gt;...</ImplementationNote>`)。
               这使得逻辑对 AI 和解析器都可见。(这是 v4.1 报告 3.4 节的思想)。
         </Directive>
 
